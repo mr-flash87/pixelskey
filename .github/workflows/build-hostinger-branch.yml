@@ -1,0 +1,39 @@
+name: Compiler le site (branche hostinger)
+
+# Compile le site et publie le résultat (dossier dist) sur la branche « hostinger ».
+# Dans Hostinger (déploiement Git), choisissez cette branche : elle contient
+# directement index.html, assets/ et .htaccess, prêts à servir.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "supabase/**"
+      - "docs/**"
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Publier dist sur la branche hostinger
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: hostinger
+          publish_dir: ./dist
+          force_orphan: true
+          enable_jekyll: true
+          commit_message: "Site compilé"
