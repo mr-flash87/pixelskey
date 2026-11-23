@@ -1,11 +1,12 @@
 // Cron-triggered: cart abandonment reminders for pending (unpaid) orders.
 // Sends up to 3 reminders via Brevo: ~24h, ~48h, ~72h after order creation.
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { getSecret } from "../_shared/app-secrets.ts";
 
-const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+let BREVO_API_KEY: string | undefined;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_TOKEN = Deno.env.get("CART_REMINDER_CRON_TOKEN");
-const SENDER = { name: "Pixels Key", email: Deno.env.get("BREVO_SENDER_EMAIL") ?? Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ?? "cesarapplestore@gmail.com" };
+let SENDER = { name: "Pixels Key", email: "cesarapplestore@gmail.com" };
 const SITE_ORIGIN = Deno.env.get("SITE_URL") ?? "https://pixelskey.app";
 const MAX_REMINDERS = 3;
 
@@ -72,6 +73,11 @@ const sendViaBrevo = async (to: string, subject: string, html: string) => {
 };
 
 Deno.serve(async (req) => {
+  BREVO_API_KEY = await getSecret("BREVO_API_KEY");
+  SENDER = {
+    name: (await getSecret("BREVO_SENDER_NAME")) ?? "Pixels Key",
+    email: (await getSecret("BREVO_SENDER_EMAIL")) ?? (await getSecret("ADMIN_NOTIFICATION_EMAIL")) ?? "cesarapplestore@gmail.com",
+  };
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Cron-only: shared secret token stored in the database vault

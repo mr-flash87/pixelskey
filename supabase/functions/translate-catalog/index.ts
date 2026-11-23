@@ -2,6 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createOpenAI } from "npm:@ai-sdk/openai@3";
 import { streamText, Output, jsonSchema } from "npm:ai@6";
+import { getSecret } from "../_shared/app-secrets.ts";
 import { translationPatch, type CatalogTranslation } from "../_shared/catalog-translation.ts";
 
 // Fournisseur IA compatible OpenAI (OpenAI, OpenRouter, Groq, etc.).
@@ -10,10 +11,10 @@ const json = (data: unknown, status = 200) => new Response(JSON.stringify(data),
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
-  const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), aiKey = Deno.env.get("AI_API_KEY");
-  const aiBaseUrl = Deno.env.get("AI_BASE_URL") ?? "https://api.openai.com/v1";
-  const aiModel = Deno.env.get("AI_MODEL") ?? "gpt-4o-mini";
-  if (!url || !key || !aiKey) return json({ error: "Configuration IA manquante (AI_API_KEY)" }, 500);
+  const url = Deno.env.get("SUPABASE_URL"), key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"), aiKey = await getSecret("AI_API_KEY");
+  const aiBaseUrl = (await getSecret("AI_BASE_URL")) ?? "https://api.openai.com/v1";
+  const aiModel = (await getSecret("AI_MODEL")) ?? "gpt-4o-mini";
+  if (!url || !key || !aiKey) return json({ error: "Configuration IA manquante (Admin → Paramètres → Intégrations)" }, 500);
   const db = createClient(url, key);
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   const { data: auth, error: authError } = await db.auth.getUser(token);

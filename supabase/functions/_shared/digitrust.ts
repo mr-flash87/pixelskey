@@ -4,6 +4,7 @@
 //   DIGITRUST_API_KEY  — clé API Digitrust (anciennement UDC_DIGITRUST_API_KEY)
 // Optionnel : DIGITRUST_AUTH_HEADER (par défaut "Authorization", valeur envoyée "Bearer <clé>")
 //             — si votre documentation Digitrust indique un autre en-tête (ex. "X-API-Key"), mettez-le ici.
+import { getSecret } from "./app-secrets.ts";
 declare const Deno: { env: { get(name: string): string | undefined } };
 export interface DigitrustProduct {
   id: number; title: string; description?: string; price: number; stock: number;
@@ -14,10 +15,10 @@ export class DigitrustError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 export async function digitrustRequest<T>(path: string, body?: Record<string, unknown>): Promise<T> {
-  const key = Deno.env.get("DIGITRUST_API_KEY") ?? Deno.env.get("UDC_DIGITRUST_API_KEY");
-  const baseUrl = Deno.env.get("DIGITRUST_API_URL");
-  if (!key || !baseUrl) throw new Error("Connexion Digitrust manquante");
-  const authHeader = Deno.env.get("DIGITRUST_AUTH_HEADER") ?? "Authorization";
+  const key = (await getSecret("DIGITRUST_API_KEY")) ?? Deno.env.get("UDC_DIGITRUST_API_KEY");
+  const baseUrl = await getSecret("DIGITRUST_API_URL");
+  if (!key || !baseUrl) throw new Error("Connexion Digitrust manquante (Admin → Fournisseurs)");
+  const authHeader = (await getSecret("DIGITRUST_AUTH_HEADER")) ?? "Authorization";
   const authValue = authHeader.toLowerCase() === "authorization" ? `Bearer ${key}` : key;
   const response = await fetch(`${baseUrl.replace(/\/+$/, "")}${path}`, {
     method: body ? "POST" : "GET",

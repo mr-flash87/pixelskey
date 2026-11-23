@@ -29,6 +29,7 @@ import Licences from "./admin/pages/Licences";
 import Finances from "./admin/pages/Finances";
 import Marketing from "./admin/pages/Marketing";
 import Synchronisations from "./admin/pages/Synchronisations";
+import Fournisseurs from "./admin/pages/Fournisseurs";
 import Parametres from "./admin/pages/Parametres";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="licences" element={<Licences />} />
               <Route path="finances" element={<Finances />} />
               <Route path="marketing" element={<Marketing />} />
+              <Route path="fournisseurs" element={<Fournisseurs />} />
               <Route path="synchronisations" element={<Synchronisations />} />
               <Route path="parametres" element={<Parametres />} />
             </Route>

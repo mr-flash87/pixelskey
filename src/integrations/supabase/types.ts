@@ -630,6 +630,7 @@ export type Database = {
           promo_start_at: string | null
           slug: string
           source: string
+          supplier_id: string | null
           stock: number
           type: string
           updated_at: string
@@ -656,6 +657,7 @@ export type Database = {
           promo_start_at?: string | null
           slug: string
           source?: string
+          supplier_id?: string | null
           stock?: number
           type?: string
           updated_at?: string
@@ -682,6 +684,7 @@ export type Database = {
           promo_start_at?: string | null
           slug?: string
           source?: string
+          supplier_id?: string | null
           stock?: number
           type?: string
           updated_at?: string

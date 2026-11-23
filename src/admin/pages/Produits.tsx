@@ -24,13 +24,14 @@ interface Product {
   display_order: number;
   stock: number;
   promo_start_at: string | null; promo_end_at: string | null;
+  supplier_id: string | null;
 }
 
 const empty: Partial<Product> = {
   name: "", slug: "", description: "", category: "other", type: "license",
   price: 0, old_price: null, is_active: true, featured: false, instant_delivery: true,
   duration: "lifetime", image_url: null, promo: false, display_order: 0,
-  stock: 0, promo_start_at: null, promo_end_at: null,
+  stock: 0, promo_start_at: null, promo_end_at: null, supplier_id: null,
 };
 
 const slugRe = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -69,6 +70,7 @@ export default function ProduitsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [stockMap, setStockMap] = useState<Record<string, number>>({});
   const [categoriesList, setCategoriesList] = useState<{ slug: string; name: string }[]>([]);
+  const [suppliersList, setSuppliersList] = useState<{ id: string; name: string }[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "in_stock" | "out" | "featured">("all");
   const [open, setOpen] = useState(false);
@@ -84,6 +86,8 @@ export default function ProduitsPage() {
     setStockMap(map);
     const { data: cats } = await supabase.from("categories").select("slug, name").order("display_order").order("name");
     setCategoriesList(cats ?? []);
+    const { data: sups } = await (supabase as any).from("suppliers").select("id, name").order("name");
+    setSuppliersList(sups ?? []);
   };
 
   useEffect(() => { load(); }, []);
@@ -319,6 +323,19 @@ export default function ProduitsPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label>Fournisseur</Label>
+              <Select value={editing.supplier_id ?? "none"} onValueChange={(v) => setEditing({ ...editing, supplier_id: v === "none" ? null : v })}>
+                <SelectTrigger className="mt-1.5 bg-background border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Aucun / mon propre stock</SelectItem>
+                  {suppliersList.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">Gère la liste dans la page Fournisseurs.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

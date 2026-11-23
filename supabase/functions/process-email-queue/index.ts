@@ -1,6 +1,7 @@
 // Dispatcher de la file d'emails (auth + transactionnels) — envoi via l'API Brevo.
 // Secrets requis : BREVO_API_KEY. Optionnel : BREVO_SENDER_EMAIL, BREVO_SENDER_NAME.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { getSecret } from '../_shared/app-secrets.ts'
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -37,9 +38,9 @@ function parseFrom(from: string | undefined): { name?: string; email: string } |
 }
 
 async function sendViaBrevo(payload: Record<string, any>, apiKey: string) {
-  const envSender = Deno.env.get('BREVO_SENDER_EMAIL')
+  const envSender = await getSecret('BREVO_SENDER_EMAIL')
   const sender = envSender
-    ? { name: Deno.env.get('BREVO_SENDER_NAME') ?? 'Pixels Key', email: envSender }
+    ? { name: (await getSecret('BREVO_SENDER_NAME')) ?? 'Pixels Key', email: envSender }
     : parseFrom(payload.from)
   if (!sender) throw new EmailAPIError(400, 'Expéditeur manquant')
   const headers: Record<string, string> = {}
@@ -113,7 +114,7 @@ async function moveToDlq(
 }
 
 Deno.serve(async (req) => {
-  const apiKey = Deno.env.get('BREVO_API_KEY')
+  const apiKey = await getSecret('BREVO_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 

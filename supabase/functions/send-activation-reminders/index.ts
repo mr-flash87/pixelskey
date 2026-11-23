@@ -1,12 +1,13 @@
 // Cron-triggered: sends a one-time activation reminder ~24h after a paid order
 // when the customer has NOT yet viewed their license keys. Sent via Brevo.
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { getSecret } from "../_shared/app-secrets.ts";
 import { createElement } from "npm:react@18.3.1";
 import { renderToStaticMarkup } from "npm:react-dom@18.3.1/server";
 import { TEMPLATES } from "../_shared/transactional-email-templates/registry.ts";
 
-const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-const SENDER = { name: "Pixels Key", email: Deno.env.get("BREVO_SENDER_EMAIL") ?? Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ?? "cesarapplestore@gmail.com" };
+let BREVO_API_KEY: string | undefined;
+let SENDER = { name: "Pixels Key", email: "cesarapplestore@gmail.com" };
 
 const sendViaBrevo = async (to: string, templateData: Record<string, unknown>) => {
   const entry = TEMPLATES["activation-reminder"];
@@ -34,6 +35,11 @@ const corsHeaders = {
 const SITE_ORIGIN = Deno.env.get("SITE_URL") ?? "https://pixelskey.app";
 
 Deno.serve(async (req) => {
+  BREVO_API_KEY = await getSecret("BREVO_API_KEY");
+  SENDER = {
+    name: (await getSecret("BREVO_SENDER_NAME")) ?? "Pixels Key",
+    email: (await getSecret("BREVO_SENDER_EMAIL")) ?? (await getSecret("ADMIN_NOTIFICATION_EMAIL")) ?? "cesarapplestore@gmail.com",
+  };
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   const supabase = createClient(

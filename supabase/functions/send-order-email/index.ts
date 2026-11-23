@@ -8,6 +8,7 @@
 // so the retry job can pick them up later.
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { getSecret } from "../_shared/app-secrets.ts";
 import { createElement } from "npm:react@18.3.1";
 import { renderToStaticMarkup } from "npm:react-dom@18.3.1/server";
 import { TEMPLATES } from "../_shared/transactional-email-templates/registry.ts";
@@ -26,9 +27,10 @@ const json = (data: unknown, status = 200) =>
 
 const SITE_ORIGIN = Deno.env.get("SITE_URL") ?? "https://pixelskey.app";
 // Adresse qui reçoit la notification interne de chaque commande.
-const ADMIN_NOTIFICATION_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") ?? "cesarapplestore@gmail.com";
+let ADMIN_NOTIFICATION_EMAIL = "cesarapplestore@gmail.com";
 
 Deno.serve(async (req) => {
+  ADMIN_NOTIFICATION_EMAIL = (await getSecret("ADMIN_NOTIFICATION_EMAIL")) ?? "cesarapplestore@gmail.com";
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!serviceKey || req.headers.get("authorization") !== `Bearer ${serviceKey}`) return json({ error: "Accès refusé" }, 403);
@@ -142,12 +144,12 @@ Deno.serve(async (req) => {
     };
 
     // Send via Brevo: render the React Email template to HTML, then POST to the Brevo API.
-    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    const BREVO_API_KEY = await getSecret("BREVO_API_KEY");
     if (!BREVO_API_KEY) {
-      await recordFailure("BREVO_API_KEY manquante");
+      await recordFailure("Clé API Brevo manquante (Admin → Paramètres → Intégrations)");
       return json({ ok: false, fallback: true, error: "EMAIL_SEND_FAILED", detail: "BREVO_API_KEY manquante" });
     }
-    const SENDER = { name: "Pixels Key", email: Deno.env.get("BREVO_SENDER_EMAIL") ?? ADMIN_NOTIFICATION_EMAIL };
+    const SENDER = { name: (await getSecret("BREVO_SENDER_NAME")) ?? "Pixels Key", email: (await getSecret("BREVO_SENDER_EMAIL")) ?? ADMIN_NOTIFICATION_EMAIL };
 
     const callTransactional = async (payload: { templateName: string; recipientEmail: string; idempotencyKey?: string; templateData: Record<string, unknown> }) => {
       try {

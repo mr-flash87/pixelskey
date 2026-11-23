@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, ShoppingBag, Tags, Package, Users, KeyRound, Wallet,
-  Megaphone, Settings, RefreshCw, LogOut, Search, Bell, Menu, X,
+  Megaphone, Settings, RefreshCw, LogOut, Truck, Search, Bell, Menu, X,
 } from "lucide-react";
 import { useState } from "react";
 import { useAdminAuth } from "../lib/auth";
@@ -18,6 +18,7 @@ const navItems = [
   { to: "/admin/licences", label: "Licences / Clés", icon: KeyRound },
   { to: "/admin/finances", label: "Finances", icon: Wallet },
   { to: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { to: "/admin/fournisseurs", label: "Fournisseurs", icon: Truck },
   { to: "/admin/synchronisations", label: "Synchronisations", icon: RefreshCw },
   { to: "/admin/parametres", label: "Paramètres", icon: Settings },
 ];

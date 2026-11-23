@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { PayDunyaSettings } from "../components/PayDunyaSettings";
 import { DigitrustSettings } from "../components/DigitrustSettings";
+import { IntegrationsSettings } from "../components/IntegrationsSettings";
 
 interface ShopInfo {
   name: string;
@@ -149,8 +150,9 @@ export default function ParametresPage() {
         <div className="overflow-x-auto -mx-1 px-1">
           <TabsList className="bg-card inline-flex w-auto">
             <TabsTrigger value="general">Général</TabsTrigger>
+            <TabsTrigger value="integrations">Intégrations</TabsTrigger>
             <TabsTrigger value="payments">Paiements</TabsTrigger>
-            <TabsTrigger value="supplier">Fournisseurs</TabsTrigger>
+            <TabsTrigger value="supplier">Marges fournisseurs</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="security">Sécurité</TabsTrigger>
             <TabsTrigger value="team">Équipe</TabsTrigger>
@@ -181,6 +183,10 @@ export default function ParametresPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="integrations" className="mt-4">
+          <IntegrationsSettings />
+        </TabsContent>
+
         <TabsContent value="payments" className="mt-4">
           <Card className="bg-card border-border p-4 sm:p-5 space-y-4 max-w-2xl">
             <PayDunyaSettings />
@@ -193,7 +199,7 @@ export default function ParametresPage() {
               <h4 className="font-semibold">Fournisseur Prime Labs</h4>
               <p className="text-xs text-muted-foreground mt-1">
                 Prix de vente = (prix fournisseur $ × taux) + marge % + montant fixe.
-                La clé API est stockée de manière sécurisée côté serveur.
+                La clé API se règle dans la page Fournisseurs (stockée chiffrée côté serveur).
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

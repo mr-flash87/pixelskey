@@ -1,13 +1,13 @@
 // Prime Labs (Pirmestore) API client — server-side only.
 // Docs: https://pirmestore.mylabsstore.com/docs
 // Auth: Authorization: Bearer <PRIMESTORE_API_KEY> (secret, never exposed client-side)
-declare const Deno: { env: { get(name: string): string | undefined } };
+import { getSecret } from "./app-secrets.ts";
 
 const BASE_URL = "https://pirmestore.mylabsstore.com/api/v1";
 
-const apiKey = () => {
-  const key = Deno.env.get("PRIMESTORE_API_KEY");
-  if (!key) throw new Error("PRIMESTORE_API_KEY non configurée");
+const apiKey = async () => {
+  const key = await getSecret("PRIMESTORE_API_KEY");
+  if (!key) throw new Error("Clé API Prime Labs non configurée (Admin → Fournisseurs)");
   return key;
 };
 
@@ -15,7 +15,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${apiKey()}`,
+      Authorization: `Bearer ${await apiKey()}`,
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
