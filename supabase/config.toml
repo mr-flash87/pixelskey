@@ -1,25 +1,48 @@
-project_id = "ixxfdkoqaudrszzvdemb"
+project_id = "uyqjgbbgcyxxdrkuxenn"
 
-[functions]
-  [functions.auth-email-hook]
-    verify_jwt = false
-  [functions.process-email-queue]
-    verify_jwt = true
-  [functions.send-transactional-email]
-    verify_jwt = true
-  [functions.preview-transactional-email]
-    verify_jwt = false
-  [functions.handle-email-unsubscribe]
-    verify_jwt = false
-  [functions.handle-email-suppression]
-    verify_jwt = false
-  [functions.send-activation-reminders]
-    verify_jwt = false
-  [functions.reconcile-pending-orders]
-    verify_jwt = false
-  [functions.debug-env]
-    verify_jwt = false
-  [functions.retry-failed-deliveries]
-    verify_jwt = false
-  [functions.fulfill-primestore-order]
-    verify_jwt = false
+# verify_jwt = false : la fonction est appelée sans session (webhook, cron)
+# et fait sa propre vérification (signature, jeton secret, rôle admin).
+[functions.auth-email-hook]
+verify_jwt = false
+[functions.process-email-queue]
+verify_jwt = true
+[functions.send-transactional-email]
+verify_jwt = true
+[functions.preview-transactional-email]
+verify_jwt = false
+[functions.handle-email-unsubscribe]
+verify_jwt = false
+[functions.handle-email-suppression]
+verify_jwt = false
+[functions.send-activation-reminders]
+verify_jwt = false
+[functions.reconcile-pending-orders]
+verify_jwt = false
+[functions.retry-failed-deliveries]
+verify_jwt = false
+[functions.fulfill-primestore-order]
+verify_jwt = false
+[functions.paydunya-webhook]
+verify_jwt = false
+[functions.leekpay-webhook]
+verify_jwt = false
+[functions.send-cart-reminders]
+verify_jwt = false
+[functions.sync-primestore-catalog]
+verify_jwt = false
+[functions.sync-digitrust-catalog]
+verify_jwt = false
+[functions.send-order-email]
+verify_jwt = false
+[functions.payment-settings]
+verify_jwt = false
+[functions.translate-catalog]
+verify_jwt = false
+[functions.create-checkout]
+verify_jwt = true
+[functions.get-order]
+verify_jwt = true
+[functions.payment-status]
+verify_jwt = true
+[functions.validate-promo]
+verify_jwt = true

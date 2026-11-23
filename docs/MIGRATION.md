@@ -1,143 +1,97 @@
-# Migration du backend (Supabase) hors de l'ancienne plateforme
+# Mise en service du backend Pixels Key
 
-Le front (ce dépôt) est 100 % indépendant : il se compile avec `npm run build` et s'héberge sur Hostinger.
-Le **backend** reste un projet Supabase (`ixxfdkoqaudrszzvdemb`). Deux cas :
+Projet Supabase : **pixelskey** — réf. `uyqjgbbgcyxxdrkuxenn` — https://supabase.com/dashboard/project/uyqjgbbgcyxxdrkuxenn
 
-## Cas A — le projet Supabase est dans VOTRE compte supabase.com
+## Déjà fait
 
-Rien à migrer : connectez-vous sur https://supabase.com/dashboard, ouvrez le projet, puis suivez
-« Secrets » et « Redéployer les fonctions » ci-dessous.
+- Toutes les tables, fonctions SQL, règles de sécurité (RLS), file d'e-mails et bucket `product-images`.
+- Le site (`.env.example`) pointe vers ce projet.
 
-## Cas B — le projet était géré par la plateforme (vous n'avez pas accès au tableau de bord Supabase)
+L'ancienne base (gérée par l'ancienne plateforme) était inaccessible : on repart d'une base vide.
+Les catalogues Prime Labs et Digitrust se réimportent par synchronisation ; les clés de licence locales,
+codes promo, catégories personnalisées et images sont à ressaisir dans l'administration.
 
-Il faut créer votre propre projet et y transférer les données :
+## 1. Déployer les fonctions serveur
 
-1. Créez un projet sur https://supabase.com (région Europe, ex. `eu-west-3` Paris).
-2. Appliquez la structure : installez la CLI (`npm i -g supabase`), puis
-   ```bash
-   supabase link --project-ref <NOUVEAU_REF>
-   supabase db push                       # applique supabase/migrations/*
-   psql "$DATABASE_URL" -f drizzle/migrations/0000_primestore_integration.sql   # puis 0001 → 0007, dans l'ordre
-   ```
-3. Transférez les données (produits, catégories, clés de licence, commandes, réglages) avec un export CSV
-   de chaque table depuis l'ancien backend si vous y avez encore accès, puis import dans le nouveau projet.
-   **Faites-le avant que l'ancien backend ne soit supprimé.**
-4. Recopiez les images du bucket `product-images` (Storage) vers le nouveau projet.
-5. Mettez à jour `.env` (URL + clé publique « anon » du nouveau projet), `supabase/config.toml` (`project_id`),
-   les URLs `ixxfdkoqaudrszzvdemb` dans `public/sitemap-images.xml`, puis recompilez le site.
-6. Recréez votre compte administrateur (Authentication → Users) et ajoutez-lui le rôle :
-   ```sql
-   insert into public.user_roles (user_id, role) values ('<UUID_UTILISATEUR>', 'super_admin');
-   ```
+1. supabase.com → avatar → **Account → Access Tokens** → créer un jeton.
+2. GitHub → dépôt `pixelskey` → **Settings → Secrets and variables → Actions** → `SUPABASE_ACCESS_TOKEN`.
+3. Onglet **Actions** → « Déployer les fonctions Supabase » → **Run workflow**.
 
-## Secrets des fonctions (Supabase → Edge Functions → Secrets)
+## 2. Secrets des fonctions
+
+Supabase → **Edge Functions → Secrets** :
 
 | Secret | Obligatoire | Rôle |
 | --- | --- | --- |
-| `PAYMENT_SETTINGS_ENCRYPTION_KEY` | oui | Chiffre les clés PayDunya enregistrées dans l'admin. Si vous en mettez une nouvelle, ressaisissez les clés PayDunya dans Admin → Paramètres → Paiements. |
-| `BREVO_API_KEY` | oui | Envoi de tous les e-mails (commande, rappels, connexion admin). |
-| `BREVO_SENDER_EMAIL` | oui | Adresse expéditrice validée dans Brevo (ex. `noreply@pixelskey.app`). |
-| `BREVO_SENDER_NAME` | non | Nom d'expéditeur (défaut « Pixels Key »). |
-| `ADMIN_NOTIFICATION_EMAIL` | non | Reçoit la notification de chaque paiement. |
-| `SITE_URL` | non | `https://pixelskey.app` par défaut. |
-| `ALLOWED_ORIGINS` | non | Domaines supplémentaires autorisés au retour de paiement, séparés par des virgules. |
+| `PAYMENT_SETTINGS_ENCRYPTION_KEY` | oui | Longue chaîne aléatoire ; chiffre les clés PayDunya saisies dans l'admin. |
+| `BREVO_API_KEY` | oui | Envoi des e-mails. |
+| `BREVO_SENDER_EMAIL` | oui | Adresse expéditrice validée dans Brevo. |
+| `ADMIN_NOTIFICATION_EMAIL` | conseillé | Reçoit la notification de chaque paiement. |
 | `PRIMESTORE_API_KEY` | oui | Fournisseur Prime Labs. |
-| `DIGITRUST_API_URL` | oui | URL de base de l'API Digitrust v2 (à demander à Digitrust / dans leur documentation). |
-| `DIGITRUST_API_KEY` | oui | Clé API Digitrust (anciennement `UDC_DIGITRUST_API_KEY`). |
-| `DIGITRUST_AUTH_HEADER` | non | En-tête d'authentification si ce n'est pas `Authorization: Bearer`. |
-| `AI_API_KEY` | pour la traduction | Clé d'un fournisseur IA compatible OpenAI. |
-| `AI_BASE_URL` / `AI_MODEL` | non | Par défaut `https://api.openai.com/v1` et `gpt-4o-mini`. |
-| `CART_REMINDER_CRON_TOKEN` | oui | Jeton secret des tâches planifiées (relances panier + synchro catalogue). |
-| `SEND_EMAIL_HOOK_SECRET` | si hook activé | Secret du « Send Email Hook » Supabase Auth. |
-| `BREVO_WEBHOOK_SECRET` | si webhook activé | Protège le webhook Brevo des rebonds/désabonnements. |
-| `LEEKPAY_PUBLIC_KEY` / `LEEKPAY_SECRET_KEY` | anciennes commandes | Uniquement pour les commandes LeekPay créées avant PayDunya. |
+| `DIGITRUST_API_URL`, `DIGITRUST_API_KEY` | oui | Fournisseur Digitrust (URL de base de l'API v2 + clé). |
+| `CART_REMINDER_CRON_TOKEN` | oui | Longue chaîne aléatoire ; protège les tâches planifiées. |
+| `AI_API_KEY` | option | Traduction du catalogue (OpenAI ou compatible). |
+| `SITE_URL`, `ALLOWED_ORIGINS`, `BREVO_SENDER_NAME`, `DIGITRUST_AUTH_HEADER`, `AI_BASE_URL`, `AI_MODEL` | option | Voir les commentaires dans le code. |
+| `SEND_EMAIL_HOOK_SECRET`, `BREVO_WEBHOOK_SECRET` | option | Hook d'e-mails Auth / webhook Brevo. |
 
-`LOVABLE_API_KEY` n'est plus utilisé : vous pouvez le supprimer.
+## 3. Créer le compte administrateur
 
-## Redéployer les fonctions
+1. Supabase → **Authentication → Users → Add user** (e-mail + mot de passe, « Auto confirm »).
+2. **SQL Editor** :
+   ```sql
+   insert into public.user_roles (user_id, role)
+   select id, 'super_admin' from auth.users where email = 'VOTRE_EMAIL';
+   ```
+3. Connectez-vous sur `/admin/login`, puis Paramètres → Paiements (clés PayDunya) et Fournisseurs
+   (marges + « Synchroniser le catalogue »).
 
-```bash
-supabase functions deploy --project-ref <REF>
-```
+## 4. Tâches planifiées (SQL Editor)
 
-**Supprimez la fonction `debug-env`** si elle existe encore : elle renvoyait publiquement les clés secrètes
-du projet. Elle n'est volontairement pas incluse dans ce dépôt.
-```bash
-supabase functions delete debug-env --project-ref <REF>
-```
-Par précaution, régénérez ensuite les clés secrètes du projet (Settings → API).
-
-## E-mails de connexion admin (optionnel)
-
-Supabase envoie déjà ses propres e-mails d'authentification. Pour utiliser les modèles Pixels Key via Brevo :
-Authentication → Hooks → **Send Email Hook** → type HTTPS → URL
-`https://<REF>.supabase.co/functions/v1/auth-email-hook`, puis copiez le secret généré dans `SEND_EMAIL_HOOK_SECRET`.
-
-## Webhook Brevo (optionnel)
-
-Brevo → Transactionnel → Paramètres → Webhooks → URL
-`https://<REF>.supabase.co/functions/v1/handle-email-suppression?token=<BREVO_WEBHOOK_SECRET>`
-(événements : hard bounce, spam, désinscription).
-
-## Tâches planifiées (SQL Editor)
-
-Remplacez `<REF>`, `<SERVICE_ROLE_KEY>` et `<CRON_TOKEN>` :
+Remplacez `<SERVICE_ROLE_KEY>` (Settings → API) et `<CRON_TOKEN>` (= `CART_REMINDER_CRON_TOKEN`).
+Ne collez jamais ces clés dans un fichier du dépôt.
 
 ```sql
--- File d'e-mails (toutes les minutes)
 select cron.schedule('process-email-queue', '* * * * *', $$
-  select net.http_post(
-    url := 'https://<REF>.supabase.co/functions/v1/process-email-queue',
+  select net.http_post(url := 'https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/process-email-queue',
     headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <SERVICE_ROLE_KEY>'),
-    body := '{}'::jsonb);
-$$);
+    body := '{}'::jsonb); $$);
 
--- Rapprochement des paiements en attente (toutes les 5 min)
 select cron.schedule('reconcile-pending-orders', '*/5 * * * *', $$
-  select net.http_post(
-    url := 'https://<REF>.supabase.co/functions/v1/reconcile-pending-orders',
+  select net.http_post(url := 'https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/reconcile-pending-orders',
     headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <SERVICE_ROLE_KEY>'),
-    body := '{"source":"cron"}'::jsonb);
-$$);
+    body := '{"source":"cron"}'::jsonb); $$);
 
--- Relance des livraisons échouées (toutes les 5 min)
 select cron.schedule('retry-failed-deliveries', '*/5 * * * *', $$
-  select net.http_post(
-    url := 'https://<REF>.supabase.co/functions/v1/retry-failed-deliveries',
+  select net.http_post(url := 'https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/retry-failed-deliveries',
     headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <SERVICE_ROLE_KEY>'),
-    body := '{}'::jsonb);
-$$);
+    body := '{}'::jsonb); $$);
 
--- Relances panier + synchronisation des catalogues fournisseurs (toutes les heures)
 select cron.schedule('send-cart-reminders', '7 * * * *', $$
-  select net.http_post(
-    url := 'https://<REF>.supabase.co/functions/v1/send-cart-reminders',
+  select net.http_post(url := 'https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/send-cart-reminders',
     headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <CRON_TOKEN>'),
-    body := '{}'::jsonb);
-$$);
+    body := '{}'::jsonb); $$);
 
--- Rappel « vos clés vous attendent » (toutes les heures)
 select cron.schedule('send-activation-reminders', '17 * * * *', $$
-  select net.http_post(
-    url := 'https://<REF>.supabase.co/functions/v1/send-activation-reminders',
+  select net.http_post(url := 'https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/send-activation-reminders',
     headers := jsonb_build_object('Content-Type','application/json','Authorization','Bearer <SERVICE_ROLE_KEY>'),
-    body := '{}'::jsonb);
-$$);
+    body := '{}'::jsonb); $$);
 ```
 
-Ne collez jamais ces clés dans un fichier du dépôt : uniquement dans le SQL Editor de Supabase.
+`send-cart-reminders` lance aussi la synchronisation horaire des catalogues fournisseurs.
 
-## PayDunya
+## 5. PayDunya
 
-Dans le tableau de bord PayDunya, l'URL de notification (IPN) doit être
-`https://<REF>.supabase.co/functions/v1/paydunya-webhook` (elle est aussi envoyée automatiquement à chaque facture).
+URL de notification (IPN) : `https://uyqjgbbgcyxxdrkuxenn.supabase.co/functions/v1/paydunya-webhook`.
 
-## Ce qui a changé par rapport à l'ancienne plateforme
+## 6. Options
 
-- Passerelle IA → fournisseur compatible OpenAI (`AI_API_KEY`).
-- E-mails de la file d'attente → API Brevo directe (les e-mails de commande l'utilisaient déjà).
-- Hook d'e-mails d'authentification → format standard Supabase (`SEND_EMAIL_HOOK_SECRET`).
-- Connecteur Digitrust → appel direct de l'API Digitrust (`DIGITRUST_API_URL`, `DIGITRUST_API_KEY`).
-- Session admin → stockage navigateur standard (plus de pont avec l'éditeur).
-- Logos de paiement → fichiers locaux dans `public/payments/`.
-- Fonction `debug-env` retirée (fuite de secrets).
+- **E-mails d'authentification personnalisés** : Authentication → Hooks → Send Email Hook (HTTPS) vers
+  `.../functions/v1/auth-email-hook`, secret dans `SEND_EMAIL_HOOK_SECRET`.
+- **Webhook Brevo** (rebonds, désinscriptions) :
+  `.../functions/v1/handle-email-suppression?token=<BREVO_WEBHOOK_SECRET>`.
+- **Authentication → URL Configuration** : Site URL = `https://pixelskey.app`.
+
+## Ancien projet
+
+L'ancienne fonction `debug-env` exposait publiquement les clés secrètes de l'ancien projet : elle n'existe
+pas dans ce dépôt. Les clés de l'ancien projet ne servent plus et ne doivent plus être réutilisées.

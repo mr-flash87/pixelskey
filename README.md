@@ -25,13 +25,15 @@ copie `dist/` après `npm run build` (ou utiliser l'action GitHub `.github/workf
 
 ## Backend (Supabase)
 
-Le site utilise le projet Supabase `ixxfdkoqaudrszzvdemb` (base de données, authentification admin,
-stockage des images, fonctions serveur). Voir **docs/MIGRATION.md** pour :
+Projet Supabase : **pixelskey** (`uyqjgbbgcyxxdrkuxenn`, région Paris), dans l'organisation « Pixel agency ».
+La base de données est déjà installée. Voir **docs/MIGRATION.md** pour la mise en service
+(secrets, déploiement des fonctions, tâches planifiées, compte admin).
 
-- récupérer la propriété du projet Supabase (ou migrer vers votre propre projet) ;
-- les secrets à définir (Brevo, IA, Digitrust, Prime Labs, PayDunya) ;
-- le redéploiement des fonctions (`supabase functions deploy`) ;
-- les tâches planifiées (cron) à recréer.
+## Déploiement automatique (GitHub Actions)
+
+- `.github/workflows/deploy-functions.yml` : déploie les fonctions Supabase (secret `SUPABASE_ACCESS_TOKEN`).
+- `.github/workflows/deploy-hostinger.yml` : compile et envoie le site sur Hostinger par FTP
+  (secrets `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`).
 
 ## Images à remplacer
 
@@ -44,4 +46,6 @@ Ces fichiers sont provisoires (le site publié était inaccessible au moment de 
 | `public/payments/*.svg/.png` | Logos officiels Orange Money, MTN MoMo, Wave, Moov Money (sources : `src/assets/payments/SOURCES.md`) |
 
 `src/assets/banner-home.jpg` et `public/og-image.jpg` ont été récupérés depuis la capture du site.
-Les images des produits sont stockées dans Supabase Storage (bucket `product-images`) et ne changent pas.
+Les images des produits se trouvent dans Supabase Storage (bucket `product-images`). Les visuels de marque
+partagés sont attendus dans `product-images/brand/` (ex. `brand/canva.jpg`, `brand/chatgpt.jpg` ; liste dans
+`supabase/functions/_shared/brand-images.ts`) : à téléverser, sinon les produits synchronisés n'auront pas d'image.
