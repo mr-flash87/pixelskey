@@ -1,0 +1,27 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /checkout
+Disallow: /order/
+Disallow: /unsubscribe
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+Sitemap: https://pixelskey.app/sitemap.xml
+Sitemap: https://pixelskey.app/sitemap-pages.xml
+Sitemap: https://pixelskey.app/sitemap-products.xml
+Sitemap: https://pixelskey.app/sitemap-images.xml
