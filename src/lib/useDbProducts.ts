@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, SUPABASE_URL } from "@/integrations/supabase/client";
 import type { Product, ProductCategory, ProductType } from "@/data/products";
 import { brandImageUrl } from "../../supabase/functions/_shared/brand-images";
 
@@ -88,7 +88,7 @@ export const adaptDbProduct = (
     uuid: row.id,
     slug: row.slug,
     name: row.name,
-    image: row.image_url || brandImageUrl(import.meta.env.VITE_SUPABASE_URL, row.name ?? "", row.slug ?? "") || "/placeholder.svg",
+    image: row.image_url || brandImageUrl(SUPABASE_URL, row.name ?? "", row.slug ?? "") || "/placeholder.svg",
     type,
     delivery: row.instant_delivery === false ? "Après traitement fournisseur" : deliveryFromType(type),
     price: displayPrice,
