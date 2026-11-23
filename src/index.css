@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Pixels Key — Design System
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Paper & Ink */
+    --background: 0 0% 100%;          /* #f5f3ee paper */
+    --foreground: 228 30% 14%;             /* #0d0d0d ink */
+    --muted-foreground: 0 0% 38%;
+    --surface: 0 0% 94%;             /* #e8e4dd */
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 230 54% 23%;                /* ink */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 0 0% 18%;
+
+    --gold: 43 94% 65%;                  /* #2d2d2d graphite */
+    --gold-foreground: 230 54% 15%;
+
+    --promo: 0 82% 47%;               /* rust — discounts only */
+    --promo-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 5%;
+    --muted: 0 0% 94%;
+
+    --accent: 0 0% 92%;
+    --accent-foreground: 0 0% 5%;
+
+    --success: 150 45% 30%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 65% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 5% / 0.12;
+    --border-solid: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 230 54% 23%;
+
+    --radius: 0.25rem;
+
+    --gradient-brand: linear-gradient(hsl(0 0% 5%), hsl(0 0% 5%));
+    --gradient-glow: none;
+    --shadow-orange: none;
+    --shadow-gold: none;
+    --shadow-card: none;
+
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(0 0% 5% / 0.12);
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Mulish', system-ui, sans-serif;
+    overflow-wrap: anywhere;
+  }
+
+  main {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  img, video, iframe {
+    max-width: 100%;
+  }
+
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: 'Mulish', sans-serif;
+    letter-spacing: 0;
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--foreground) / 0.12);
+  }
+
+  .neon-orange, .neon-gold { text-shadow: none; }
+
+  .product-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--foreground) / 0.12);
+    border-radius: var(--radius);
+    transition: var(--transition-smooth);
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    border-color: hsl(var(--foreground));
+  }
+
+  .section-title { @apply text-lg sm:text-2xl font-bold uppercase tracking-[0.08em] text-foreground; }
+  .rule { border-top: 1px solid hsl(var(--foreground)); }
+  .kicker { @apply text-[11px] font-bold uppercase tracking-[0.18em]; }
+
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; }
+}
+
+@layer utilities {
+  .text-gradient-brand { color: hsl(var(--foreground)); font-style: italic; }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+.animate-pulse-warning {
+  animation: pulse-warning 1.6s ease-in-out infinite;
+}
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

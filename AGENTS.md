@@ -1,0 +1,25 @@
+# Architecture rules
+- Resolve shared brand images through one brand matcher used by supplier imports and storefront adaptation, preserving explicit product images, so new durations inherit visuals without duplicate uploads.
+- Store admin-entered payment credentials encrypted in a service-only table and expose only configuration status through an authenticated super-admin function, so no browser read can reveal saved keys.
+- New checkout sessions use PayDunya exclusively; retain legacy LeekPay callbacks only for already-created orders to avoid losing pre-switch payments.
+- Verify PayDunya invoices server-side and share one idempotent finalizer between notifications and reconciliation, so browser redirects never authorize delivery.
+- Run supplier catalogue reconciliation hourly by triggering the synchronizer from the cart-reminder cron with its dedicated cron token (service-key comparison broke after key format changes), while retaining admin-triggered sync, because supplier catalogue notifications are not documented.
+- Preserve existing product names, slugs and descriptions during supplier reconciliation so localized editorial content is not overwritten.
+- Translate imported editorial text through an authenticated staff-only function calling an OpenAI-compatible AI provider (AI_API_KEY / AI_BASE_URL / AI_MODEL) with streamed strict output; update only names and descriptions, retaining offer identifiers, pricing and fulfillment rules.
+- Isolate supplier identities, margin settings and synchronization history; Digitrust never mutates Prime Labs rows, and both dispatch in-process after local stock checks.
+- Separate Digitrust customer ordering from supplier wallet funding: synchronize real stock and validate live stock at checkout, but enforce funding before fulfillment, so customer orders can wait for owner replenishment without pretending delivery succeeded.
+- Import reviewed manual Digitrust offers with their real delivery flag; reconcile accepted purchases by supplier reference and leave unknown or empty delivery responses pending, so manual processing never fabricates delivered credentials.
+- Import reviewed Prime Labs manual offers as made-to-order capacity, not instant key stock; reconcile accepted orders by their saved supplier reference, while keeping activation requests excluded until their dedicated workflow exists.
+- Persist Digitrust purchase intent before spending and never automatically repeat an uncertain purchase, because its documented API has no idempotency key; recover known orders by their supplier reference.
+- Record Digitrust deliveries through a service-only row-locked atomic function, so simultaneous retries cannot duplicate delivered credentials.
+- Apply global anywhere text wrapping and constrain main content widths, with local scrolling for wide tables, so long catalogue content cannot widen mobile pages.
+- Use one stable availability sorter for public product lists before pagination, so stock changes move unavailable products last without disrupting order within each group.
+- Derive browser stock from each fresh catalogue snapshot minus current cart quantities, never persist stock counts, so supplier replenishments replace obsolete sold-out states without discarding the saved cart.
+- Pin email queue functions to an empty search path with schema-qualified references, so caller-controlled lookup paths cannot affect privileged execution.
+- Keep direct order and order-item reads admin-only; customer order pages use the existing server-side order lookup, so table enumeration cannot expose customer records.
+- Restrict product-image metadata listing to authenticated staff while retaining public image URLs, so catalogue images remain visible without exposing the storage listing.
+- Keep static sitewide social fallbacks in index.html and route metadata in the shared SEO hook; do not claim client-side tags provide route-specific previews to non-JavaScript crawlers.
+- Orders fully covered by a promo code (0 F) use provider=promo, skip PayDunya entirely, and are delivered through the shared deliverPaidOrder finalizer, so free orders never depend on payment-provider configuration.
+- Run supplier fulfillment in-process from a shared module (not via internal function-to-function HTTP calls), so service-key format changes cannot silently block deliveries.
+- Serve payment-operator logos from public/payments through small asset pointers, and keep the FAQ in the shared footer using the existing accordion, so every public page shares accessible support and legal navigation.
+- All emails (auth, transactional, order) are delivered through the Brevo API; the queue dispatcher keeps retries, rate-limit backoff and the suppression list.
