@@ -4,6 +4,7 @@ import { syncCatalogs } from "./catalog.ts";
 import { deliverOrder, deliveryMessages } from "./fulfillment.ts";
 import { syncableSuppliers } from "./suppliers/registry.ts";
 import { esc, fcfa, tg } from "./telegram.ts";
+import { getCommunity } from "./community.ts";
 
 export const ADMIN_HELP = `🛠️ <b>Administration</b>
 
@@ -25,11 +26,13 @@ export const ADMIN_HELP = `🛠️ <b>Administration</b>
 /publier ID · /masquer ID
 /prix ID MONTANT — prix fixe (la synchro ne le change plus)
 /categorie ID Nom de catégorie
+/nom ID Nouveau nom
 /nouveau PRIX | Catégorie | Nom — produit en stock manuel
 /stock ID — puis, une ligne par clé/compte à ajouter
 
 <b>Clients</b>
 /crediter TELEGRAM_ID MONTANT — ajouter (ou retirer avec -) du solde
+/groupe — groupe officiel (ajoutez le bot comme administrateur du groupe pour l'activer)
 /bloquer TELEGRAM_ID · /debloquer TELEGRAM_ID`;
 
 async function findOrder(ref: string) {
@@ -150,6 +153,22 @@ export async function handleAdminCommand(chatId: number, text: string): Promise<
       if (!name) { await reply(chatId, "Usage : /categorie ID Nom"); return true; }
       await db().from("products").update({ category: name.slice(0, 40) }).eq("id", Number(args[0]));
       await reply(chatId, `Catégorie mise à jour.`);
+      return true;
+    }
+    case "/nom": {
+      const name = args.slice(1).join(" ").trim();
+      if (!Number(args[0]) || !name) { await reply(chatId, "Usage : /nom ID Nouveau nom"); return true; }
+      const { error } = await db().from("products").update({ name: name.slice(0, 120) }).eq("id", Number(args[0]));
+      await reply(chatId, error ? "Produit introuvable." : `Nom du produit ${esc(args[0])} mis à jour.`);
+      return true;
+    }
+    case "/groupe": {
+      const c = await getCommunity();
+      await reply(chatId, c
+        ? `👥 Groupe officiel : <b>${esc(c.title)}</b>
+Lien : ${esc(c.url || "—")}
+Adhésion obligatoire et annonces actives.`
+        : "Aucun groupe officiel. Ajoutez le bot comme <b>administrateur</b> de votre groupe ou canal pour l'activer.");
       return true;
     }
     case "/nouveau": {

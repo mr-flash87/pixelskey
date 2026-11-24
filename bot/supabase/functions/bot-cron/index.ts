@@ -10,12 +10,13 @@ import { deliverOrder } from "../_shared/fulfillment.ts";
 import { syncCatalogs } from "../_shared/catalog.ts";
 import { notifyAdmins } from "../_shared/notify.ts";
 import { esc, tg } from "../_shared/telegram.ts";
+import { announceNewProducts } from "../_shared/community.ts";
 
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
 
 async function tick() {
-  const report = { payments_checked: 0, payments_paid: 0, delivered_retry: 0, supplier_polled: 0, stale: 0 };
+  const report = { payments_checked: 0, payments_paid: 0, delivered_retry: 0, supplier_polled: 0, stale: 0, announced: 0 };
 
   // 1) Paiements en attente : un webhook perdu ne doit jamais faire perdre une vente.
   const { data: pending } = await db().from("payments").select("id").eq("status", "pending").gte("created_at", ago(180)).lte("created_at", ago(1)).limit(50);
@@ -51,6 +52,8 @@ async function tick() {
       await notifyAdmins(`⚠️ ${esc(o.ref)} : exécution interrompue pendant l'achat fournisseur. Vérifiez chez le fournisseur, puis /lier ou /relancer ${esc(o.ref)} force.`);
     }
   }
+  // 5) Nouveaux services annoncés dans le groupe officiel.
+  report.announced = await announceNewProducts().catch(() => 0);
   return report;
 }
 

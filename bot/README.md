@@ -124,6 +124,20 @@ Pour lancer une action à la main (SQL Editor) : `select public.bot_cron_call('s
 
 Les noms, descriptions, catégories et la visibilité que vous modifiez ne sont jamais écrasés par la synchronisation. Le prix suit les marges, sauf s'il a été fixé avec `/prix`.
 
+## Groupe officiel (adhésion obligatoire et annonces)
+
+Ajoutez le bot comme **administrateur** de votre groupe ou canal Telegram, depuis un compte listé dans
+`ADMIN_CHAT_IDS`, avec le droit « Inviter des utilisateurs ». Le bot l'enregistre automatiquement
+(`settings.community_*`) et vous confirme l'activation. Ensuite :
+
+- un client qui n'est pas membre voit un écran « Rejoindre le groupe » avant de pouvoir utiliser le bot ;
+- chaque nouveau service publié et en stock est annoncé dans le groupe avec un bouton « Commander »
+  (lien direct `https://t.me/<bot>?start=p_<id>`), une seule fois par service ;
+- `/groupe` affiche le groupe actif. Retirer les droits d'administrateur du bot désactive les deux fonctions.
+
+Les nouvelles offres à livraison automatique sont publiées d'office (`suppliers.auto_publish`).
+Renommez-les avec `/nom ID Nouveau nom`.
+
 ## Offres en double chez plusieurs fournisseurs
 
 Donnez le même `dup_group` aux offres identiques (`update products set dup_group = 'netflix-1m' where id in (…)`).

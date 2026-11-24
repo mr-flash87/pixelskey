@@ -5,9 +5,11 @@ export type InlineButton = { text: string; callback_data?: string; url?: string 
 export type Keyboard = InlineButton[][];
 
 export interface TgUser { id: number; username?: string; first_name?: string; language_code?: string }
-export interface TgMessage { message_id: number; chat: { id: number; type: string }; from?: TgUser; text?: string }
+export interface TgChat { id: number; type: string; title?: string; username?: string }
+export interface TgMessage { message_id: number; chat: TgChat; from?: TgUser; text?: string }
+export interface TgChatMemberUpdate { chat: TgChat; from: TgUser; new_chat_member: { status: string; user: TgUser } }
 export interface TgCallback { id: string; from: TgUser; message?: TgMessage; data?: string }
-export interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback }
+export interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: TgCallback; my_chat_member?: TgChatMemberUpdate }
 
 export class TelegramError extends Error {
   constructor(public code: number, message: string) { super(message); }
@@ -44,9 +46,12 @@ export const tg = {
   answer: (callbackId: string, text?: string, alert = false) =>
     call("answerCallbackQuery", { callback_query_id: callbackId, ...(text ? { text, show_alert: alert } : {}) }).catch(() => undefined),
   setWebhook: (url: string, secret: string) =>
-    call("setWebhook", { url, secret_token: secret, allowed_updates: ["message", "callback_query"], drop_pending_updates: false }),
+    call("setWebhook", { url, secret_token: secret, allowed_updates: ["message", "callback_query", "my_chat_member"], drop_pending_updates: false }),
   setCommands: (commands: { command: string; description: string }[]) => call("setMyCommands", { commands }),
-  getMe: () => call<{ username: string }>("getMe", {}),
+  getMe: () => call<{ id: number; username: string }>("getMe", {}),
+  getChatMember: (chatId: number | string, userId: number) =>
+    call<{ status: string; is_member?: boolean }>("getChatMember", { chat_id: chatId, user_id: userId }),
+  exportInviteLink: (chatId: number | string) => call<string>("exportChatInviteLink", { chat_id: chatId }),
 };
 
 /** Échappe le texte pour parse_mode HTML. */

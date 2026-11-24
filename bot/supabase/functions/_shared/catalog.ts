@@ -1,5 +1,5 @@
 // Synchronisation des catalogues fournisseurs vers la table products.
-// - Nouvelles offres : importées masquées (sauf auto_publish), catégorie devinée.
+// - Nouvelles offres : publiées si auto_publish et livraison automatique, sinon masquées ; catégorie devinée.
 // - Offres existantes : prix (sauf price_locked), stock et disponibilité mis à jour ;
 //   nom, description, catégorie et visibilité choisis par l'admin ne sont jamais écrasés.
 import { db } from "./db.ts";
@@ -35,7 +35,7 @@ export async function syncCatalogs(only?: string): Promise<SyncReport[]> {
           if (!o.available || price <= 0) continue;
           const { error: e } = await db().from("products").insert({
             ...live, price, supplier_id: adapter.id, supplier_product_id: o.externalId, name: o.name.slice(0, 120),
-            description: o.description.slice(0, 2000), category: guessCategory(o.name), is_active: s.auto_publish,
+            description: o.description.slice(0, 2000), category: guessCategory(o.name), is_active: s.auto_publish && o.instant,
           });
           if (e) throw new Error(`Import ${o.externalId} impossible`);
           report.created++;

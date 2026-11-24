@@ -7,6 +7,7 @@ import { normalizePayerPhone } from "./flashpay.ts";
 import { esc, tg, type TgUpdate, type TgUser } from "./telegram.ts";
 import * as ui from "./ui.ts";
 import { handleAdminCommand } from "./admin.ts";
+import { handleMyChatMember, isCommunityMember, joinScreen } from "./community.ts";
 
 type Screen = { text: string; keyboard: import("./telegram.ts").Keyboard };
 
@@ -116,6 +117,15 @@ async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>, u
   let toast: string | undefined;
   try {
     switch (action) {
+      case "joined": {
+        if (!(await isCommunityMember(user.telegram_id, true))) {
+          await tg.answer(update.id, "Vous n'êtes pas encore membre du groupe. Rejoignez-le puis réessayez.", true);
+          return;
+        }
+        toast = "✅ Bienvenue !";
+        await show(ui.homeScreen(update.from.first_name, user.balance));
+        break;
+      }
       case "home": { const s = ui.homeScreen(update.from.first_name, user.balance); await show(s); break; }
       case "help": await show({ text: ui.helpText(), keyboard: [ui.homeRow()] }); break;
       case "cats": await show(ui.categoriesScreen(await categories())); break;
@@ -193,7 +203,12 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
   const reply = (s: Screen) => tg.send(chatId, s.text, s.keyboard);
   try {
     switch (command) {
-      case "/start": await setState(user.telegram_id, null); await reply(ui.homeScreen(msg.from?.first_name, user.balance)); return;
+      case "/start": {
+        await setState(user.telegram_id, null);
+        const productId = text.match(/^\/start\s+p_(\d+)$/)?.[1];
+        await reply(productId ? await productScreen(Number(productId), user) : ui.homeScreen(msg.from?.first_name, user.balance));
+        return;
+      }
       case "/boutique": await reply(ui.categoriesScreen(await categories())); return;
       case "/commandes": await reply(await ordersScreen(user, 0)); return;
       case "/solde": await reply(await walletScreen(user)); return;
@@ -225,11 +240,22 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
 }
 
 export async function handleUpdate(update: TgUpdate) {
+  if (update.my_chat_member) return handleMyChatMember(update.my_chat_member);
   const from = update.message?.from ?? update.callback_query?.from;
   if (!from || (from as { is_bot?: boolean }).is_bot) return;
+  if (update.message && update.message.chat.type !== "private") return;
   const startArg = update.message?.text?.match(/^\/start\s+ref_([a-f0-9]{8})$/)?.[1];
   const user = await upsertUser(from, startArg);
   if (user.is_blocked) return;
+  // Adhésion au groupe officiel obligatoire (le parrainage est enregistré avant).
+  if (update.callback_query?.data !== "joined" && !(await isCommunityMember(user.telegram_id))) {
+    const s = await joinScreen();
+    if (update.callback_query) {
+      await tg.answer(update.callback_query.id, "Rejoignez d'abord notre groupe.", true);
+      await tg.edit(update.callback_query.from.id, update.callback_query.message?.message_id, s.text, s.keyboard);
+    } else await tg.send(from.id, s.text, s.keyboard);
+    return;
+  }
   if (update.callback_query) return handleCallback(update.callback_query, user);
   if (update.message) return handleMessage(update.message, user);
 }
