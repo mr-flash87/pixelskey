@@ -1,7 +1,7 @@
 // Commandes d'administration (réservées aux ADMIN_CHAT_IDS).
 import { db } from "./db.ts";
 import { syncCatalogs } from "./catalog.ts";
-import { deliverOrder } from "./fulfillment.ts";
+import { deliverOrder, deliveryMessages } from "./fulfillment.ts";
 import { syncableSuppliers } from "./suppliers/registry.ts";
 import { esc, fcfa, tg } from "./telegram.ts";
 
@@ -108,7 +108,6 @@ export async function handleAdminCommand(chatId: number, text: string): Promise<
       if (o.status !== "paid") { await reply(chatId, "Cette commande n'est pas payée."); return true; }
       const { data: ok } = await db().rpc("record_delivery", { _order_id: o.id, _contents: lines, _supplier_order_id: null });
       if (!ok) { await reply(chatId, "Déjà livrée."); return true; }
-      const { deliveryMessages } = await import("./fulfillment.ts");
       for (const m of deliveryMessages(o, lines)) await tg.send(o.telegram_id, m).catch(() => undefined);
       await reply(chatId, `✅ ${esc(o.ref)} livrée manuellement.`);
       return true;

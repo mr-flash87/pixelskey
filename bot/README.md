@@ -74,7 +74,7 @@ supabase db push
 | `ADMIN_CHAT_IDS` | vos identifiants Telegram, séparés par des virgules |
 | `FLASHPAY_API_KEY` | `fp_live_…` |
 | `FLASHPAY_WEBHOOK_SECRET` | `fpwh_…` |
-| `CRON_TOKEN` | chaîne aléatoire longue (`openssl rand -hex 32`) |
+| `CRON_TOKEN` | facultatif (un jeton est généré en base, voir étape 5) |
 | `DIGITRUST_API_URL`, `DIGITRUST_API_KEY` | accès Digitrust (optionnel : `DIGITRUST_AUTH_HEADER`) |
 | `SUPPLIER_EMAIL` | adresse e-mail exigée par Digitrust pour chaque achat (la vôtre) |
 | `PRIMESTORE_API_KEY` | accès Prime Labs |
@@ -89,38 +89,29 @@ supabase functions deploy telegram-webhook
 supabase functions deploy flashpay-webhook
 supabase functions deploy bot-cron
 
-# Enregistre le webhook Telegram et le menu des commandes
-curl -X POST https://VOTRE_PROJET_BOT.supabase.co/functions/v1/bot-cron \
-  -H "Authorization: Bearer $CRON_TOKEN" -H "Content-Type: application/json" -d '{"action":"setup"}'
+```
+
+Puis, dans le SQL Editor, enregistrez le webhook Telegram et le menu des commandes :
+
+```sql
+select public.bot_cron_call('setup');
+-- résultat : select status_code, content from net._http_response order by id desc limit 1;
 ```
 
 Dans votre compte FlashPay, l'URL de webhook est envoyée automatiquement avec chaque paiement
 (`https://VOTRE_PROJET_BOT.supabase.co/functions/v1/flashpay-webhook`).
 
-### 5. Tâches planifiées (SQL Editor de Supabase)
+### 5. Tâches planifiées
 
-Activez les extensions `pg_cron` et `pg_net` (Database → Extensions), enregistrez le jeton dans le coffre, puis :
+La migration `20261124010000_bot_cron.sql` active `pg_cron`/`pg_net`, génère un jeton aléatoire
+(`settings.cron_token`, lu à la fois par la base et par `bot-cron`) et programme :
 
-```sql
-select vault.create_secret('VOTRE_CRON_TOKEN', 'bot_cron_token');
+- `bot-tick` toutes les 5 minutes (rattrapage des paiements et livraisons) ;
+- `bot-sync` toutes les heures à la minute 7 (synchronisation des catalogues).
 
-select cron.schedule('bot-tick', '*/5 * * * *', $$
-  select net.http_post(
-    url := 'https://VOTRE_PROJET_BOT.supabase.co/functions/v1/bot-cron',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization',
-      'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'bot_cron_token')),
-    body := '{"action":"tick"}'::jsonb)
-$$);
-
-select cron.schedule('bot-sync', '7 * * * *', $$
-  select net.http_post(
-    url := 'https://VOTRE_PROJET_BOT.supabase.co/functions/v1/bot-cron',
-    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization',
-      'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'bot_cron_token')),
-    body := '{"action":"sync"}'::jsonb,
-    timeout_milliseconds := 120000)
-$$);
-```
+Si votre projet n'est pas `eneyqjnjpxvxagjaopfe`, modifiez `settings.functions_url`.
+Le secret `CRON_TOKEN` est facultatif : s'il existe, il remplace le jeton généré.
+Pour lancer une action à la main (SQL Editor) : `select public.bot_cron_call('setup');`
 
 ### 6. Premier lancement
 

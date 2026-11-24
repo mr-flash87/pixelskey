@@ -2,8 +2,8 @@
 //   {"action":"tick"}  toutes les 5 min : rattrape paiements et livraisons
 //   {"action":"sync"}  toutes les heures : synchronise les catalogues fournisseurs
 //   {"action":"setup"} une fois : enregistre le webhook et les commandes du bot
-import { db } from "../_shared/db.ts";
-import { env, safeEqual } from "../_shared/env.ts";
+import { db, setting } from "../_shared/db.ts";
+import { env, optionalEnv, safeEqual } from "../_shared/env.ts";
 import { flashpay } from "../_shared/flashpay.ts";
 import { processPaidPayment } from "../_shared/payments.ts";
 import { deliverOrder } from "../_shared/fulfillment.ts";
@@ -57,7 +57,9 @@ async function tick() {
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Méthode non autorisée" }, 405);
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
-  if (!token || !safeEqual(token, env("CRON_TOKEN"))) return json({ error: "Non autorisé" }, 401);
+  // Jeton : secret CRON_TOKEN, sinon jeton généré en base (settings.cron_token, lu aussi par pg_cron).
+  const expected = optionalEnv("CRON_TOKEN") ?? String(await setting("cron_token", ""));
+  if (!token || expected.length < 32 || !safeEqual(token, expected)) return json({ error: "Non autorisé" }, 401);
   const { action } = await req.json().catch(() => ({ action: "tick" }));
   try {
     if (action === "sync") {

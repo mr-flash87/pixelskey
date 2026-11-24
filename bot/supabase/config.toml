@@ -1,5 +1,5 @@
 # Projet Supabase dédié au bot (séparé de pixelskey). Remplacez par l'identifiant de votre projet.
-project_id = "VOTRE_PROJET_BOT"
+project_id = "eneyqjnjpxvxagjaopfe"
 
 # Ces fonctions sont appelées par Telegram, FlashPay et pg_cron (pas de session Supabase) :
 # chacune vérifie elle-même son secret (jeton Telegram, signature HMAC, CRON_TOKEN).
