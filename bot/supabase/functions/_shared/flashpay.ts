@@ -39,7 +39,33 @@ export const flashpay = {
   get: (id: string) => request<FlashPayPayment>("GET", `/payments/${encodeURIComponent(id)}`),
   cancel: (id: string) => request<FlashPayPayment>("POST", `/payments/${encodeURIComponent(id)}/cancel`, {}),
   account: () => request<Record<string, unknown>>("GET", "/account"),
+  /**
+   * Transmet le numéro qui va payer et l'opérateur choisi (route publique, sans clé).
+   * FlashPay s'en sert pour rattacher le SMS de confirmation à ce paiement.
+   */
+  async setPayer(id: string, payerPhone: string, operator: string): Promise<void> {
+    const publicBase = base().replace(/\/api\/v1$/, "/api/public");
+    const res = await fetch(`${publicBase}/payments/${encodeURIComponent(id)}/payer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payer_phone: payerPhone, operator }),
+      signal: AbortSignal.timeout(20000),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      const err = data?.error ?? {};
+      throw new FlashPayError(res.status, String(err.code ?? "server_error"), String(err.message ?? `FlashPay HTTP ${res.status}`).slice(0, 300));
+    }
+  },
 };
+
+/** Normalise un numéro burkinabè : garde 8 chiffres (retire +226 / 00226 et les espaces). */
+export function normalizePayerPhone(input: string): string | null {
+  let digits = input.replace(/\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  if (digits.length === 11 && digits.startsWith("226")) digits = digits.slice(3);
+  return /^\d{8}$/.test(digits) ? digits : null;
+}
 
 /** Montants acceptés par FlashPay (XOF entiers). */
 export const FLASHPAY_MIN = 100;

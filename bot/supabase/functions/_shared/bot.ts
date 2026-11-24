@@ -2,7 +2,8 @@
 import { db, setting, type BotUser, type Order, type Product } from "./db.ts";
 import { adminIds, optionalEnv } from "./env.ts";
 import { displayedStock } from "./catalog.ts";
-import { cancelPayment, checkoutWithBalance, checkoutWithFlashPay, createTopup, refreshPayment, UserError } from "./payments.ts";
+import { cancelPayment, checkoutWithBalance, checkoutWithFlashPay, createTopup, findOperator, loadPendingPayment, refreshPayment, submitPayer, UserError } from "./payments.ts";
+import { normalizePayerPhone } from "./flashpay.ts";
 import { esc, tg, type TgUpdate, type TgUser } from "./telegram.ts";
 import * as ui from "./ui.ts";
 import { handleAdminCommand } from "./admin.ts";
@@ -137,6 +138,19 @@ async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>, u
         await tg.edit(chatId, mid, `✅ <b>Commande ${esc(order.ref)} payée avec votre solde.</b>`, [[{ text: "📦 Mes commandes", callback_data: "orders:0" }], ui.homeRow()]);
         break;
       }
+      case "pay": {
+        await setState(user.telegram_id, null);
+        const { payment, title } = await loadPendingPayment(user.telegram_id, a);
+        await show(ui.paymentScreen(title, payment));
+        break;
+      }
+      case "op": {
+        const { payment } = await loadPendingPayment(user.telegram_id, a);
+        const op = findOperator(payment, b);
+        await setState(user.telegram_id, "payer_phone", { payment_id: a, operator: b });
+        await show(ui.askPayerPhoneScreen(op, a));
+        break;
+      }
       case "chk": {
         const status = await refreshPayment(user.telegram_id, a);
         if (status === "paid") { toast = "✅ Paiement reçu !"; await show({ text: "✅ <b>Paiement reçu.</b> Vos accès vous sont envoyés dans ce chat.", keyboard: [[{ text: "📦 Mes commandes", callback_data: "orders:0" }], ui.homeRow()] }); }
@@ -185,6 +199,16 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
       case "/solde": await reply(await walletScreen(user)); return;
       case "/parrainage": await reply(await referralScreen(user)); return;
       case "/aide": case "/help": await reply({ text: ui.helpText(), keyboard: [ui.homeRow()] }); return;
+    }
+    if (user.state === "payer_phone") {
+      const { payment_id, operator } = user.state_data as { payment_id?: string; operator?: string };
+      const phone = normalizePayerPhone(text);
+      if (!phone) { await tg.send(chatId, "Numéro invalide. Envoyez les <b>8 chiffres</b> du numéro qui va payer, par exemple <code>70123456</code>."); return; }
+      if (!payment_id || !operator) { await setState(user.telegram_id, null); await reply(ui.homeScreen(msg.from?.first_name, user.balance)); return; }
+      const { payment, operator: op } = await submitPayer(user.telegram_id, payment_id, operator, phone);
+      await setState(user.telegram_id, null);
+      await reply(ui.operatorInstructionsScreen(payment, op, phone));
+      return;
     }
     if (user.state === "topup_amount") {
       const amount = Number(text.replace(/[\s.,F]/gi, ""));

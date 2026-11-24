@@ -1,11 +1,11 @@
 import { assert, assertEquals, assertFalse, assertStringIncludes } from "jsr:@std/assert@1";
-import { verifyFlashPaySignature, type FlashPayPayment } from "../supabase/functions/_shared/flashpay.ts";
+import { normalizePayerPhone, verifyFlashPaySignature, type FlashPayPayment } from "../supabase/functions/_shared/flashpay.ts";
 import { guessCategory, sellPrice } from "../supabase/functions/_shared/pricing.ts";
 import { normalizeItems } from "../supabase/functions/_shared/suppliers/types.ts";
 import { digitrustAvailable } from "../supabase/functions/_shared/suppliers/digitrust.ts";
 import { primeState } from "../supabase/functions/_shared/suppliers/primelabs.ts";
 import { deliveryMessages } from "../supabase/functions/_shared/fulfillment.ts";
-import { paymentScreen, productScreen } from "../supabase/functions/_shared/ui.ts";
+import { askPayerPhoneScreen, operatorInstructionsScreen, paymentScreen, productScreen } from "../supabase/functions/_shared/ui.ts";
 import { esc, fcfa } from "../supabase/functions/_shared/telegram.ts";
 import { safeEqual } from "../supabase/functions/_shared/env.ts";
 
@@ -76,22 +76,44 @@ Deno.test("message de livraison : HTML échappé et découpé sous 4096 caractè
   assertEquals(msgs.join("").match(/<code>/g)?.length, 40);
 });
 
-Deno.test("écran de paiement : consigne Wave « Montant reçu » quand il y a des frais", () => {
-  const payment = {
-    id: "PAY-1", status: "pending", amount: 5000, currency: "XOF", reference: "CMD-1", checkout_url: "https://marchand.pixelpub.online/pay/pay/PAY-1",
-    paid_operator: null, expires_at: null, paid_at: null,
-    operators: [
-      { code: "orange", name: "Orange Money", merchant_number: "67608599", ussd_code: "*144*2*1*67608599*5000#", pay_link: null, fee_percent: 0, amount_to_send: 5000, instructions: null },
-      { code: "moov", name: "Moov Money", merchant_number: "62360277", ussd_code: "Paiement : *555*2*1*62360277*5000#", pay_link: null, fee_percent: 0, amount_to_send: 5000, instructions: null },
-      { code: "wave", name: "Wave", merchant_number: "02247701", ussd_code: null, pay_link: null, fee_percent: 0.5, amount_to_send: 5025, instructions: "Ouvrez l'application Wave" },
-    ],
-  } satisfies FlashPayPayment;
-  const s = paymentScreen("Commande CMD-1", payment);
-  assertStringIncludes(s.text, "<code>*555*2*1*62360277*5000#</code>");
-  assertStringIncludes(s.text, "Montant reçu");
-  assertStringIncludes(s.text, "5 025 F");
-  assertEquals(s.keyboard[0][0].url, payment.checkout_url);
+const samplePayment = {
+  id: "PAY-1", status: "pending", amount: 5000, currency: "XOF", reference: "CMD-1", checkout_url: "https://marchand.pixelpub.online/pay/pay/PAY-1",
+  paid_operator: null, expires_at: null, paid_at: null,
+  operators: [
+    { code: "orange", name: "Orange Money", merchant_number: "67608599", ussd_code: "*144*2*1*67608599*5000#", pay_link: null, fee_percent: 0, amount_to_send: 5000, instructions: null },
+    { code: "moov", name: "Moov Money", merchant_number: "62360277", ussd_code: "Paiement : *555*2*1*62360277*5000#", pay_link: null, fee_percent: 0, amount_to_send: 5000, instructions: null },
+    { code: "wave", name: "Wave", merchant_number: "02247701", ussd_code: null, pay_link: null, fee_percent: 0.5, amount_to_send: 5025, instructions: "Ouvrez l'application Wave" },
+  ],
+} satisfies FlashPayPayment;
+
+Deno.test("paiement étape 1 : un bouton par opérateur, callback_data <= 64 octets", () => {
+  const s = paymentScreen("Commande CMD-1", samplePayment);
+  const ops = s.keyboard.flat().filter((b) => b.callback_data?.startsWith("op:"));
+  assertEquals(ops.map((b) => b.callback_data), ["op:PAY-1:orange", "op:PAY-1:moov", "op:PAY-1:wave"]);
   for (const row of s.keyboard) for (const b of row) if (b.callback_data) assert(new TextEncoder().encode(b.callback_data).length <= 64);
+});
+
+Deno.test("paiement étape 2 : demande le numéro du payeur", () => {
+  const s = askPayerPhoneScreen(samplePayment.operators[0], "PAY-1");
+  assertStringIncludes(s.text, "numéro Orange Money qui va payer");
+});
+
+Deno.test("paiement étape 3 : consignes USSD, numéro du payeur et règle Wave", () => {
+  const moov = operatorInstructionsScreen(samplePayment, samplePayment.operators[1], "60112233");
+  assertStringIncludes(moov.text, "<code>*555*2*1*62360277*5000#</code>");
+  assertStringIncludes(moov.text, "60112233");
+  const wave = operatorInstructionsScreen(samplePayment, samplePayment.operators[2], "70123456");
+  assertStringIncludes(wave.text, "Montant reçu");
+  assertStringIncludes(wave.text, "5 025 F");
+  assertStringIncludes(wave.text, "<code>02247701</code>");
+});
+
+Deno.test("numéro du payeur normalisé (8 chiffres, +226 retiré)", () => {
+  assertEquals(normalizePayerPhone("70 12 34 56"), "70123456");
+  assertEquals(normalizePayerPhone("+226 70123456"), "70123456");
+  assertEquals(normalizePayerPhone("0022670123456"), "70123456");
+  assertEquals(normalizePayerPhone("7012345"), null);
+  assertEquals(normalizePayerPhone("abc"), null);
 });
 
 Deno.test("fiche produit : bouton solde seulement si le solde suffit, pas d'achat en rupture", () => {

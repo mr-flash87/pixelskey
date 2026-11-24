@@ -1,6 +1,6 @@
 // Textes et claviers du bot (HTML Telegram). Aucune logique métier ici.
 import type { Order, Product } from "./db.ts";
-import type { FlashPayPayment } from "./flashpay.ts";
+import type { FlashPayOperator, FlashPayPayment } from "./flashpay.ts";
 import { esc, fcfa, type Keyboard } from "./telegram.ts";
 import { optionalEnv } from "./env.ts";
 
@@ -70,29 +70,72 @@ export function confirmBalanceScreen(p: Product, balance: number) {
   };
 }
 
-/** Écran de paiement FlashPay : lien de paiement + codes USSD + règle des frais Wave. */
+const OP_EMOJI: Record<string, string> = { orange: "🟠", moov: "🔵", wave: "🌊" };
+const paymentFooter = (paymentId: string): Keyboard => [
+  [{ text: "🔄 J'ai payé — vérifier", callback_data: `chk:${paymentId}` }],
+  [{ text: "❌ Annuler", callback_data: `cxl:${paymentId}` }],
+];
+
+/** Étape 1 : choix du moyen de paiement (liste fournie par FlashPay à chaque paiement). */
 export function paymentScreen(title: string, payment: FlashPayPayment) {
   const lines = [
     `🧾 <b>${esc(title)}</b>`,
     `Montant : <b>${fcfa(payment.amount)}</b>`,
     "",
-    "Touchez <b>« Payer »</b> pour ouvrir la page de paiement sécurisée, ou payez directement :",
+    "Choisissez votre moyen de paiement 👇",
+    "",
+    "⏱️ Ce paiement expire dans <b>15 minutes</b>.",
   ];
-  for (const op of payment.operators ?? []) {
-    lines.push("", `<b>${esc(op.name)}</b>${op.merchant_number ? ` — numéro <code>${esc(op.merchant_number)}</code>` : ""}`);
-    if (op.ussd_code) lines.push(`Composez : <code>${esc(op.ussd_code.replace(/^.*?:\s*/, ""))}</code>`);
-    if (op.fee_percent > 0) {
-      lines.push(`Montant à faire recevoir : <b>${fcfa(payment.amount)}</b>`, `Vous paierez environ : ${fcfa(op.amount_to_send)} (frais ${String(op.fee_percent).replace(".", ",")} % inclus)`);
-      if (op.code === "wave") lines.push("⚠️ Dans Wave, saisissez le montant dans « <b>Montant reçu</b> », et non dans « Montant envoyé ». Sinon le paiement ne sera pas reconnu.");
-    }
-    if (op.instructions) lines.push(esc(op.instructions));
+  const keyboard: Keyboard = (payment.operators ?? []).map((op) => [{ text: `${OP_EMOJI[op.code] ?? "📱"} ${op.name}`, callback_data: `op:${payment.id}:${op.code}` }]);
+  keyboard.push(...paymentFooter(payment.id));
+  return { text: lines.join("\n"), keyboard };
+}
+
+/** Étape 2 : numéro qui va payer (FlashPay s'en sert pour reconnaître le paiement). */
+export function askPayerPhoneScreen(op: FlashPayOperator, paymentId: string) {
+  return {
+    text: `${OP_EMOJI[op.code] ?? "📱"} <b>${esc(op.name)}</b>\n\n`
+      + `Envoyez le <b>numéro ${esc(op.name)} qui va payer</b> (8 chiffres), par exemple <code>70123456</code>.\n\n`
+      + "Ce numéro permet de reconnaître automatiquement votre paiement : payez bien depuis ce numéro.",
+    keyboard: [[{ text: "↩️ Changer de moyen de paiement", callback_data: `pay:${paymentId}` }], ...paymentFooter(paymentId)],
+  };
+}
+
+/** Étape 3 : consignes de paiement pour l'opérateur choisi. */
+export function operatorInstructionsScreen(payment: FlashPayPayment, op: FlashPayOperator, payerPhone: string) {
+  const amountToSend = op.fee_percent > 0 ? op.amount_to_send : payment.amount;
+  const lines = [
+    `${OP_EMOJI[op.code] ?? "📱"} <b>Paiement ${esc(op.name)}</b>`,
+    "",
+    `📞 Votre numéro : <b>${esc(payerPhone)}</b>`,
+    `💵 Montant : <b>${fcfa(payment.amount)}</b>`,
+  ];
+  if (op.merchant_number) lines.push(`🏪 Numéro marchand : <code>${esc(op.merchant_number)}</code>`);
+  lines.push("", "<b>Comment payer :</b>");
+  const ussd = op.ussd_code?.replace(/^.*?:\s*/, "");
+  if (ussd) {
+    lines.push(`1️⃣ Depuis le <b>${esc(payerPhone)}</b>, composez :`, `<code>${esc(ussd)}</code>`, "<i>(touchez le code pour le copier)</i>", "2️⃣ Confirmez avec votre code secret.");
+  } else if (op.code === "wave") {
+    lines.push(
+      `1️⃣ Ouvrez l'application <b>Wave</b> du <b>${esc(payerPhone)}</b>.`,
+      `2️⃣ Touchez « Envoyer de l'argent » et saisissez le numéro <code>${esc(op.merchant_number ?? "")}</code>.`,
+      `3️⃣ Dans « <b>Montant reçu</b> », saisissez <b>${payment.amount}</b> (et non dans « Montant envoyé »).`,
+    );
+  } else if (op.merchant_number) {
+    lines.push(`1️⃣ Depuis le <b>${esc(payerPhone)}</b>, envoyez <b>${fcfa(amountToSend)}</b> au <code>${esc(op.merchant_number)}</code>.`);
   }
-  lines.push("", "⏱️ Ce paiement expire dans <b>15 minutes</b>. La livraison démarre automatiquement dès réception.");
-  const keyboard: Keyboard = [
-    [{ text: `💳 Payer ${fcfa(payment.amount)}`, url: payment.checkout_url }],
-    [{ text: "🔄 J'ai payé — vérifier", callback_data: `chk:${payment.id}` }],
-    [{ text: "❌ Annuler", callback_data: `cxl:${payment.id}` }],
-  ];
+  if (op.fee_percent > 0) {
+    lines.push("", `Montant à faire recevoir : <b>${fcfa(payment.amount)}</b>`, `Vous paierez environ : ${fcfa(op.amount_to_send)} (frais ${String(op.fee_percent).replace(".", ",")} % inclus)`);
+    if (op.code === "wave") lines.push("⚠️ Saisissez le montant dans « <b>Montant reçu</b> », sinon le paiement ne sera pas reconnu.");
+  }
+  if (op.instructions && op.code !== "wave") lines.push("", esc(op.instructions));
+  lines.push("", "✅ Dès que votre paiement est reçu, vos accès arrivent automatiquement ici.", "⏱️ Ce paiement expire dans <b>15 minutes</b>.");
+  const keyboard: Keyboard = [];
+  if (op.pay_link?.startsWith("https://")) keyboard.push([{ text: `💳 Ouvrir ${op.name}`, url: op.pay_link }]);
+  keyboard.push(
+    [{ text: "📞 Changer de numéro", callback_data: `op:${payment.id}:${op.code}` }, { text: "↩️ Autre moyen", callback_data: `pay:${payment.id}` }],
+    ...paymentFooter(payment.id),
+  );
   return { text: lines.join("\n"), keyboard };
 }
 

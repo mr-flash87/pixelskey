@@ -1,7 +1,7 @@
 // Commandes, paiements FlashPay, solde et parrainage.
 import { db, setting, type Order, type Product } from "./db.ts";
 import { env, optionalEnv } from "./env.ts";
-import { flashpay, FLASHPAY_MAX, FLASHPAY_MIN, type FlashPayPayment } from "./flashpay.ts";
+import { flashpay, FLASHPAY_MAX, FLASHPAY_MIN, type FlashPayOperator, type FlashPayPayment } from "./flashpay.ts";
 import { adapterFor } from "./suppliers/registry.ts";
 import { deliverOrder } from "./fulfillment.ts";
 import { notifyAdmins } from "./notify.ts";
@@ -176,4 +176,45 @@ export async function cancelPayment(telegramId: number, paymentId: string) {
   if (remote.status === "paid") { await processPaidPayment(remote); return; }
   await db().from("payments").update({ status: "cancelled" }).eq("id", paymentId).eq("status", "pending");
   if (p.order_id) await db().from("orders").update({ status: "cancelled" }).eq("id", p.order_id).eq("status", "pending");
+}
+
+/** Relit chez FlashPay un paiement en attente appartenant à l'utilisateur, avec son titre d'affichage. */
+export async function loadPendingPayment(telegramId: number, paymentId: string): Promise<{ payment: FlashPayPayment; title: string }> {
+  const { data: p } = await db().from("payments").select("id, telegram_id, status, kind, order_id").eq("id", paymentId).maybeSingle();
+  if (!p || p.telegram_id !== telegramId) throw new UserError("Paiement introuvable.");
+  if (p.status !== "pending") throw new UserError(p.status === "paid" ? "Ce paiement est déjà reçu." : "Ce paiement a expiré ou a été annulé. Recommencez depuis la boutique.");
+  let payment: FlashPayPayment;
+  try { payment = await flashpay.get(paymentId); } catch { throw new UserError("Paiement momentanément indisponible. Réessayez dans un instant."); }
+  if (payment.status === "paid") { await processPaidPayment(payment); throw new UserError("✅ Ce paiement est déjà reçu."); }
+  if (payment.status !== "pending") {
+    await db().from("payments").update({ status: payment.status }).eq("id", paymentId).eq("status", "pending");
+    throw new UserError("Ce paiement a expiré ou a été annulé. Recommencez depuis la boutique.");
+  }
+  let title = "Recharge de solde";
+  if (p.order_id) {
+    const { data: o } = await db().from("orders").select("ref, product_name").eq("id", p.order_id).maybeSingle();
+    if (o) title = `Commande ${o.ref} — ${o.product_name}`;
+  }
+  return { payment, title };
+}
+
+export function findOperator(payment: FlashPayPayment, code: string): FlashPayOperator {
+  const op = (payment.operators ?? []).find((o) => o.code === code);
+  if (!op) throw new UserError("Ce moyen de paiement n'est plus disponible. Choisissez-en un autre.");
+  return op;
+}
+
+/** Enregistre chez FlashPay le numéro qui va payer et l'opérateur choisi, puis renvoie les consignes à afficher. */
+export async function submitPayer(telegramId: number, paymentId: string, operator: string, payerPhone: string) {
+  const { payment } = await loadPendingPayment(telegramId, paymentId);
+  findOperator(payment, operator);
+  try {
+    await flashpay.setPayer(paymentId, payerPhone, operator);
+  } catch (e) {
+    console.error("flashpay setPayer failed", e instanceof Error ? e.message : e);
+    throw new UserError("Ce numéro n'a pas pu être enregistré. Vérifiez-le et renvoyez-le.");
+  }
+  // Relu après l'enregistrement : les consignes peuvent dépendre de l'opérateur choisi.
+  const fresh = await flashpay.get(paymentId).catch(() => payment);
+  return { payment: fresh, operator: findOperator(fresh, operator) };
 }
