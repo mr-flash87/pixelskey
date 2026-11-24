@@ -5,7 +5,7 @@ import { flashpay, FLASHPAY_MAX, FLASHPAY_MIN, type FlashPayOperator, type Flash
 import { adapterFor } from "./suppliers/registry.ts";
 import { deliverOrder } from "./fulfillment.ts";
 import { notifyAdmins } from "./notify.ts";
-import { esc, fcfa, tg } from "./telegram.ts";
+import { botUsername, esc, fcfa, tg } from "./telegram.ts";
 
 export class UserError extends Error {}
 
@@ -38,7 +38,7 @@ async function cancelPendingPayments(telegramId: number) {
 async function createFlashPayPayment(kind: "order" | "topup", telegramId: number, amount: number, reference: string, description: string, orderId: string | null) {
   if (amount < FLASHPAY_MIN || amount > FLASHPAY_MAX) throw new UserError(`Montant hors limites (${fcfa(FLASHPAY_MIN)} – ${fcfa(FLASHPAY_MAX)}).`);
   await cancelPendingPayments(telegramId);
-  const botUser = optionalEnv("TELEGRAM_BOT_USERNAME");
+  const botUser = await botUsername().catch(() => null);
   let payment: FlashPayPayment;
   try {
     payment = await flashpay.create({

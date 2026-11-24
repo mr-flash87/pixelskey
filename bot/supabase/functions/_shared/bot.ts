@@ -4,7 +4,7 @@ import { adminIds, optionalEnv } from "./env.ts";
 import { displayedStock } from "./catalog.ts";
 import { cancelPayment, checkoutWithBalance, checkoutWithFlashPay, createTopup, findOperator, loadPendingPayment, refreshPayment, submitPayer, UserError } from "./payments.ts";
 import { normalizePayerPhone } from "./flashpay.ts";
-import { esc, tg, type TgUpdate, type TgUser } from "./telegram.ts";
+import { botUsername, esc, tg, type TgUpdate, type TgUser } from "./telegram.ts";
 import * as ui from "./ui.ts";
 import { handleAdminCommand } from "./admin.ts";
 import { handleMyChatMember, isCommunityMember, joinScreen } from "./community.ts";
@@ -89,7 +89,7 @@ async function walletScreen(user: BotUser): Promise<Screen> {
 }
 
 async function referralScreen(user: BotUser): Promise<Screen> {
-  const username = optionalEnv("TELEGRAM_BOT_USERNAME") ?? (await tg.getMe()).username;
+  const username = await botUsername();
   const [{ count }, { data: bonuses }, percent] = await Promise.all([
     db().from("bot_users").select("telegram_id", { count: "exact", head: true }).eq("referrer_id", user.telegram_id),
     db().from("wallet_transactions").select("amount").eq("telegram_id", user.telegram_id).eq("kind", "referral_bonus"),

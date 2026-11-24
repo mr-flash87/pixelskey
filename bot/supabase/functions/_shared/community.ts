@@ -3,7 +3,7 @@
 import { db, setting } from "./db.ts";
 import { adminIds, optionalEnv } from "./env.ts";
 import { notifyAdmins } from "./notify.ts";
-import { esc, fcfa, tg, type TgChatMemberUpdate } from "./telegram.ts";
+import { botUsername, esc, fcfa, tg, type TgChatMemberUpdate } from "./telegram.ts";
 
 export interface Community { chatId: number; url: string; title: string }
 
@@ -91,7 +91,7 @@ export async function announceNewProducts(): Promise<number> {
   if (!community) return 0;
   const { data: rows, error } = await db().rpc("pending_announcements", { _limit: 10 });
   if (error || !rows?.length) return 0;
-  const botUser = optionalEnv("TELEGRAM_BOT_USERNAME") ?? (await tg.getMe()).username;
+  const botUser = await botUsername();
   let sent = 0;
   for (const p of rows as { id: number; name: string; price: number; category: string; instant: boolean }[]) {
     try {

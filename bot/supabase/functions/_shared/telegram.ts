@@ -54,6 +54,13 @@ export const tg = {
   exportInviteLink: (chatId: number | string) => call<string>("exportChatInviteLink", { chat_id: chatId }),
 };
 
+let cachedUsername: string | null = null;
+/** Nom réel du bot, demandé à Telegram (jamais un réglage saisi à la main, qui pourrait être faux). */
+export async function botUsername(): Promise<string> {
+  cachedUsername ??= (await tg.getMe()).username;
+  return cachedUsername;
+}
+
 /** Échappe le texte pour parse_mode HTML. */
 export const esc = (s: unknown) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 

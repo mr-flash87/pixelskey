@@ -69,7 +69,7 @@ supabase db push
 | Secret | Valeur |
 | --- | --- |
 | `TELEGRAM_BOT_TOKEN` | token donné par BotFather |
-| `TELEGRAM_BOT_USERNAME` | nom du bot sans @ (liens de parrainage, retour après paiement) |
+| `TELEGRAM_BOT_USERNAME` | inutile : le nom réel du bot est demandé à Telegram |
 | `TELEGRAM_WEBHOOK_SECRET` | chaîne aléatoire longue (`openssl rand -hex 32`) |
 | `ADMIN_CHAT_IDS` | vos identifiants Telegram, séparés par des virgules |
 | `FLASHPAY_API_KEY` | `fp_live_…` |
