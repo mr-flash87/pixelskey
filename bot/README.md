@@ -124,6 +124,14 @@ Pour lancer une action à la main (SQL Editor) : `select public.bot_cron_call('s
 
 Les noms, descriptions, catégories et la visibilité que vous modifiez ne sont jamais écrasés par la synchronisation. Le prix suit les marges, sauf s'il a été fixé avec `/prix`.
 
+## Offres en double chez plusieurs fournisseurs
+
+Donnez le même `dup_group` aux offres identiques (`update products set dup_group = 'netflix-1m' where id in (…)`).
+Une seule est visible par groupe : la moins chère parmi celles en stock, sinon la moins chère.
+Le choix est recalculé chaque heure (tâche `bot-duplicates`, après la synchro) ou à la main :
+`select public.apply_duplicate_groups();`. Pour un produit d'un groupe, `/publier` et `/masquer`
+sont remplacés par ce calcul : sortez-le du groupe (`dup_group = null`) pour le gérer à la main.
+
 ## Réglages (table `settings`)
 
 | Clé | Défaut | Rôle |
