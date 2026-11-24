@@ -1,0 +1,7 @@
+{
+  "compilerOptions": { "strict": true, "lib": ["deno.ns", "dom", "esnext"] },
+  "tasks": {
+    "check": "deno check supabase/functions/*/index.ts",
+    "test": "deno test --allow-env tests/"
+  }
+}
