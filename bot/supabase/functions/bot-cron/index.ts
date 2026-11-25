@@ -82,6 +82,16 @@ Deno.serve(async (req) => {
         { command: "parrainage", description: "Inviter des amis" },
         { command: "aide", description: "Comment ça marche" },
       ]);
+      await tg.setDescription(
+        "✨ Vos abonnements premium, livrés en quelques minutes !\n\n"
+        + "🤖 IA : ChatGPT, Gemini, Lovable, ElevenLabs…\n"
+        + "🎨 Design & vidéo : CapCut, Adobe, Canva, Figma…\n"
+        + "📺 Streaming, 💼 productivité, 🔒 VPN…\n\n"
+        + "📱 Paiement Orange Money · Moov Money · Wave\n"
+        + "⚡ Livraison automatique 24 h/24\n\n"
+        + "👇 Touchez DÉMARRER pour voir la boutique",
+      );
+      await tg.setShortDescription("Abonnements premium (IA, design, streaming, VPN) payés en Mobile Money et livrés automatiquement ⚡");
       const me = await tg.getMe();
       return json({ ok: true, webhook: url, bot: me.username });
     }

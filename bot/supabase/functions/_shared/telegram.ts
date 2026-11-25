@@ -48,6 +48,10 @@ export const tg = {
   setWebhook: (url: string, secret: string) =>
     call("setWebhook", { url, secret_token: secret, allowed_updates: ["message", "callback_query", "my_chat_member"], drop_pending_updates: false }),
   setCommands: (commands: { command: string; description: string }[]) => call("setMyCommands", { commands }),
+  /** Texte affiché dans un chat vide, avant « Démarrer » (512 caractères max). */
+  setDescription: (description: string) => call("setMyDescription", { description }),
+  /** Texte du profil du bot et des aperçus de partage (120 caractères max). */
+  setShortDescription: (short_description: string) => call("setMyShortDescription", { short_description }),
   getMe: () => call<{ id: number; username: string }>("getMe", {}),
   getChatMember: (chatId: number | string, userId: number) =>
     call<{ status: string; is_member?: boolean }>("getChatMember", { chat_id: chatId, user_id: userId }),

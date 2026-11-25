@@ -126,6 +126,7 @@ async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>, u
         await show(ui.homeScreen(update.from.first_name, user.balance));
         break;
       }
+      case "noop": break;
       case "home": { const s = ui.homeScreen(update.from.first_name, user.balance); await show(s); break; }
       case "help": await show({ text: ui.helpText(), keyboard: [ui.homeRow()] }); break;
       case "cats": await show(ui.categoriesScreen(await categories())); break;
