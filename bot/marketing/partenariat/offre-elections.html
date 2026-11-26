@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Digital Pass — Offre partenaire élections scolaires</title>
+<style>
+  @font-face { font-family: "Jakarta"; font-weight: 500; src: url(../promo/assets/fonts/plus-jakarta-sans-latin-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jakarta"; font-weight: 700; src: url(../promo/assets/fonts/plus-jakarta-sans-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jakarta"; font-weight: 800; src: url(../promo/assets/fonts/plus-jakarta-sans-latin-800-normal.woff2) format("woff2"); }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --v: #5300D6; --v2: #7B3BFF; --c: #27B5FF; --ink: #15102B; --muted: #5E5A73; --line: #E6E1F5; --soft: #F5F2FF; }
+  body { font-family: "Jakarta", "Noto Color Emoji", sans-serif; color: var(--ink); font-size: 10.5pt; }
+  .page { width: 210mm; height: 297mm; position: relative; overflow: hidden; page-break-after: always; padding: 12mm 15mm 16mm; }
+  .page:last-child { page-break-after: auto; }
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5mm; }
+  .head img { height: 15mm; }
+  .tag { font-size: 8.5pt; font-weight: 700; color: var(--v); background: var(--soft); padding: 2mm 4mm; border-radius: 99px; letter-spacing: .5px; text-transform: uppercase; }
+  .hero { background: linear-gradient(120deg, #1A0547 0%, var(--v) 55%, var(--v2) 100%); color: #fff; border-radius: 6mm; padding: 7mm 9mm; position: relative; overflow: hidden; }
+  .hero::after { content: ""; position: absolute; right: -30mm; top: -30mm; width: 90mm; height: 90mm; border-radius: 50%; border: 1.2mm solid rgba(255,255,255,.12); }
+  .hero h1 { font-size: 25pt; font-weight: 800; letter-spacing: -.5px; line-height: 1.08; }
+  .hero p { margin-top: 3mm; font-size: 11pt; opacity: .92; max-width: 135mm; line-height: 1.45; }
+  h2 { font-size: 14pt; font-weight: 800; color: var(--v); margin: 5mm 0 2.5mm; letter-spacing: -.2px; }
+  .pack { border: .5mm solid var(--v2); border-radius: 5mm; padding: 6mm 7mm; display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; background: linear-gradient(180deg, #fff, var(--soft)); }
+  .pack h3 { font-size: 15pt; font-weight: 800; }
+  .pack .sub { color: var(--muted); margin: 1mm 0 3mm; }
+  .pack ul { list-style: none; }
+  .pack li { display: flex; justify-content: space-between; padding: 1mm 0; border-bottom: .2mm dashed var(--line); font-size: 10pt; }
+  .pack li span:last-child { color: var(--muted); white-space: nowrap; margin-left: 3mm; }
+  .price { background: var(--v); color: #fff; border-radius: 4mm; padding: 6mm 5mm; text-align: center; align-self: center; }
+  .price .old { font-size: 11pt; text-decoration: line-through; opacity: .75; }
+  .price .new { font-size: 26pt; font-weight: 800; line-height: 1.1; margin: 1mm 0; }
+  .price .lbl { font-size: 8.5pt; text-transform: uppercase; letter-spacing: 1px; opacity: .85; }
+  .price .save { display: inline-block; margin-top: 2mm; background: #fff; color: var(--v); font-weight: 800; border-radius: 99px; padding: 1mm 4mm; font-size: 9.5pt; }
+  .why { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 4mm; }
+  .why div { background: var(--soft); border-radius: 4mm; padding: 4mm; font-size: 9.5pt; line-height: 1.4; }
+  .why b { display: block; font-size: 10.5pt; margin-bottom: 1mm; color: var(--v); }
+  table { width: 100%; border-collapse: collapse; font-size: 9.8pt; }
+  th { text-align: left; font-size: 8.5pt; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); padding: 2mm 2.5mm; border-bottom: .4mm solid var(--v); }
+  th.n, td.n { text-align: right; white-space: nowrap; }
+  td { padding: 2.1mm 2.5mm; border-bottom: .2mm solid var(--line); }
+  tr.cat td { background: var(--soft); font-weight: 800; color: var(--v); padding-top: 2.6mm; }
+  td.old { color: var(--muted); text-decoration: line-through; }
+  td.new { font-weight: 800; color: var(--v); }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; }
+  .steps div { border: .3mm solid var(--line); border-radius: 4mm; padding: 4mm; font-size: 9.3pt; line-height: 1.4; }
+  .steps .n { width: 7mm; height: 7mm; border-radius: 50%; background: var(--v); color: #fff; font-weight: 800; display: grid; place-items: center; margin-bottom: 2mm; }
+  .note { margin-top: 5mm; font-size: 8.8pt; color: var(--muted); line-height: 1.5; }
+  .foot { position: absolute; left: 15mm; right: 15mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 8.5pt; color: var(--muted); border-top: .2mm solid var(--line); padding-top: 3mm; }
+  .foot b { color: var(--v); }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="head"><img src="../promo/assets/logo-poster.png" style="height:18mm;border-radius:3mm" alt="Digital Pass"><span class="tag">Offre partenaire · Élections scolaires</span></div>
+  <div class="hero">
+    <h1>Digital Pass accompagne<br>votre campagne électorale</h1>
+    <p>Des outils premium pour créer vos affiches, vos vidéos et vos discours, et des abonnements à prix étudiant pour tous les élèves de l'établissement, payables en Mobile Money.</p>
+  </div>
+
+  <h2>🗳️ Le Pack Campagne</h2>
+  <div class="pack">
+    <div>
+      <h3>Tout pour faire campagne</h3>
+      <div class="sub">Affiches, vidéos, présentations, discours et documents.</div>
+      <ul>
+        <li><span>🤖 ChatGPT Plus — 1 mois (compte privé)</span><span>discours, slogans</span></li>
+        <li><span>🤖 ChatGPT Go — 3 mois</span><span>idées, textes</span></li>
+        <li><span>📊 Gamma AI Pro</span><span>présentations</span></li>
+        <li><span>🎬 CapCut Pro — 25 jours</span><span>vidéos de campagne</span></li>
+        <li><span>🎨 Adobe Express — 4 mois</span><span>affiches, visuels</span></li>
+        <li><span>💼 Office 365 à vie</span><span>Word, PowerPoint</span></li>
+        <li><span>🗂️ Notion Éducation Plus — 1 an</span><span>organisation</span></li>
+        <li><span>📄 iLovePDF Premium — 12 mois</span><span>documents</span></li>
+      </ul>
+    </div>
+    <div class="price">
+      <div class="lbl">Prix normal</div>
+      <div class="old">15 000 F</div>
+      <div class="lbl" style="margin-top:3mm">Prix étudiant</div>
+      <div class="new">7 500 F</div>
+      <span class="save">-50 %</span>
+    </div>
+  </div>
+
+  <div class="why">
+    <div><b>⚡ Livraison automatique</b>Les accès arrivent directement sur Telegram, en quelques minutes, 24 h/24.</div>
+    <div><b>📱 Sans carte bancaire</b>Paiement par Orange Money, Moov Money ou Wave.</div>
+    <div><b>🔐 Accès sauvegardés</b>Tous les accès restent disponibles dans « Mes commandes ».</div>
+  </div>
+
+  <h2>🛒 Comment commander</h2>
+  <div class="steps">
+    <div><div class="n">1</div>Ouvrir Telegram et chercher <b>@DigitalPassBf_bot</b>, puis « Démarrer ».</div>
+    <div><div class="n">2</div>Rejoindre le groupe officiel, puis ouvrir la <b>Boutique</b>.</div>
+    <div><div class="n">3</div>Choisir son service, puis payer en <b>Mobile Money</b>.</div>
+    <div><div class="n">4</div>Recevoir ses accès <b>automatiquement</b> dans le chat.</div>
+  </div>
+
+  <div class="foot"><span><b>Digital Pass</b> · Vos abonnements premium, livrés en quelques minutes</span><span>t.me/DigitalPassBf_bot · 1/2</span></div>
+</section>
+
+<section class="page">
+  <div class="head"><img src="../promo/assets/logo-poster.png" style="height:14mm;border-radius:2mm" alt="Digital Pass"><span class="tag">Tarifs étudiants · Pendant la campagne</span></div>
+  <h2 style="margin-top:0">🎓 Tarifs étudiants</h2>
+  <table>
+    <thead><tr><th>Offre</th><th class="n">Prix normal</th><th class="n">Prix étudiant</th></tr></thead>
+    <tbody>
+      <tr class="cat"><td colspan="3">🗳️ Pour la campagne : affiches, vidéos, discours</td></tr>
+      <tr><td>Adobe Express — 4 mois</td><td class="n old">950 F</td><td class="n new">650 F</td></tr>
+      <tr><td>CapCut Pro — 7 jours</td><td class="n old">500 F</td><td class="n new">350 F</td></tr>
+      <tr><td>CapCut Pro — 25 jours</td><td class="n old">2 100 F</td><td class="n new">1 450 F</td></tr>
+      <tr><td>Gamma AI Pro (présentations)</td><td class="n old">5 250 F</td><td class="n new">3 600 F</td></tr>
+      <tr><td>ChatGPT Go — 3 mois</td><td class="n old">950 F</td><td class="n new">650 F</td></tr>
+      <tr><td>ChatGPT Plus — 1 mois (compte privé)</td><td class="n old">2 650 F</td><td class="n new">1 800 F</td></tr>
+      <tr><td>ChatGPT Plus — 1 mois (garanti)</td><td class="n old">8 700 F</td><td class="n new">5 950 F</td></tr>
+      <tr><td>Canva Éducation — 3 ans (jusqu'à 500 utilisateurs)</td><td class="n old">6 850 F</td><td class="n new">4 700 F</td></tr>
+      <tr class="cat"><td colspan="3">📚 Pour les études</td></tr>
+      <tr><td>Office 365 à vie</td><td class="n old">1 050 F</td><td class="n new">750 F</td></tr>
+      <tr><td>Notion Éducation Plus — 1 an</td><td class="n old">950 F</td><td class="n new">650 F</td></tr>
+      <tr><td>iLovePDF Premium — 12 mois</td><td class="n old">1 300 F</td><td class="n new">900 F</td></tr>
+      <tr><td>Figma Pro Éducation — 2 ans</td><td class="n old">2 650 F</td><td class="n new">1 800 F</td></tr>
+      <tr><td>Coursera Premium — 12 mois</td><td class="n old">3 600 F</td><td class="n new">2 450 F</td></tr>
+      <tr><td>Miro Pro — 3 mois</td><td class="n old">2 100 F</td><td class="n new">1 450 F</td></tr>
+      <tr><td>Duolingo Super — 12 mois</td><td class="n old">450 F</td><td class="n new">300 F</td></tr>
+      <tr><td>Gemini AI Plus — 12 mois</td><td class="n old">650 F</td><td class="n new">450 F</td></tr>
+      <tr><td>Gemini Pro — 18 mois</td><td class="n old">1 050 F</td><td class="n new">750 F</td></tr>
+      <tr class="cat"><td colspan="3">🎬 Loisirs</td></tr>
+      <tr><td>Prime Video — 6 mois</td><td class="n old">3 150 F</td><td class="n new">2 200 F</td></tr>
+      <tr><td>YouTube Premium — 3 mois</td><td class="n old">2 650 F</td><td class="n new">1 800 F</td></tr>
+      <tr><td>ExpressVPN — 1 mois</td><td class="n old">550 F</td><td class="n new">400 F</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Tarifs réservés aux élèves de l'établissement, valables pendant la durée de la campagne électorale. Commande et paiement via le bot Telegram <b>@DigitalPassBf_bot</b> (Orange Money, Moov Money, Wave). Les accès sont livrés directement sur Telegram.</p>
+  <div class="foot"><span><b>Digital Pass</b> · Partenaire des élections scolaires</span><span>t.me/DigitalPassBf_bot · 2/2</span></div>
+</section>
+</body>
+</html>
