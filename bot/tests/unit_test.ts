@@ -101,11 +101,14 @@ Deno.test("paiement étape 2 : demande le numéro du payeur", () => {
 Deno.test("paiement étape 3 : consignes USSD, numéro du payeur et règle Wave", () => {
   const moov = operatorInstructionsScreen(samplePayment, samplePayment.operators[1], "60112233");
   assertStringIncludes(moov.text, "<code>*555*2*1*62360277*5000#</code>");
+  const copy = moov.keyboard.flat().find((b) => b.copy_text);
+  assertEquals(copy?.copy_text?.text, "*555*2*1*62360277*5000#");
   assertStringIncludes(moov.text, "60112233");
   const wave = operatorInstructionsScreen(samplePayment, samplePayment.operators[2], "70123456");
   assertStringIncludes(wave.text, "Montant reçu");
   assertStringIncludes(wave.text, "5 025 F");
   assertStringIncludes(wave.text, "<code>02247701</code>");
+  assertEquals(wave.keyboard.flat().filter((b) => b.copy_text).map((b) => b.copy_text?.text), ["02247701", "5000"]);
 });
 
 Deno.test("numéro du payeur normalisé (8 chiffres, +226 retiré)", () => {

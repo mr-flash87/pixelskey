@@ -1,7 +1,8 @@
 // Client minimal de l'API Bot Telegram (HTML parse_mode).
 import { env } from "./env.ts";
 
-export type InlineButton = { text: string; callback_data?: string; url?: string };
+/** copy_text : un appui copie le texte dans le presse-papiers du téléphone (Bot API 7.11+). */
+export type InlineButton = { text: string; callback_data?: string; url?: string; copy_text?: { text: string } };
 export type Keyboard = InlineButton[][];
 
 export interface TgUser { id: number; username?: string; first_name?: string; language_code?: string }

@@ -145,11 +145,16 @@ export function operatorInstructionsScreen(payment: FlashPayPayment, op: FlashPa
   lines.push(LINE, "<b>Comment payer :</b>");
   const ussd = op.ussd_code?.replace(/^.*?:\s*/, "");
   if (ussd) {
-    lines.push(`1️⃣ Depuis le <b>${esc(payerPhone)}</b>, composez :`, `<code>${esc(ussd)}</code>`, "<i>(touchez le code pour le copier)</i>", "2️⃣ Confirmez avec votre code secret.");
+    lines.push(
+      "1️⃣ Touchez <b>📋 Copier le code</b> ci-dessous",
+      `2️⃣ Ouvrez l'appli <b>Téléphone</b> du <b>${esc(payerPhone)}</b>, collez le code et appelez`,
+      `<code>${esc(ussd)}</code>`,
+      "3️⃣ Confirmez avec votre code secret",
+    );
   } else if (op.code === "wave") {
     lines.push(
       `1️⃣ Ouvrez l'application <b>Wave</b> du <b>${esc(payerPhone)}</b>.`,
-      `2️⃣ Touchez « Envoyer de l'argent » et saisissez le numéro <code>${esc(op.merchant_number ?? "")}</code>.`,
+      `2️⃣ Touchez « Envoyer de l'argent » et collez le numéro <code>${esc(op.merchant_number ?? "")}</code> (bouton 📋 ci-dessous).`,
       `3️⃣ Dans « <b>Montant reçu</b> », saisissez <b>${payment.amount}</b> (et non dans « Montant envoyé »).`,
     );
   } else if (op.merchant_number) {
@@ -162,7 +167,12 @@ export function operatorInstructionsScreen(payment: FlashPayPayment, op: FlashPa
   if (op.instructions && op.code !== "wave") lines.push("", esc(op.instructions));
   lines.push(LINE, "✅ Dès que votre paiement est reçu, vos accès arrivent automatiquement ici.", "⏱️ Ce paiement expire dans <b>15 minutes</b>.");
   const keyboard: Keyboard = [];
+  // Boutons de copie : un appui met le code (ou le numéro) dans le presse-papiers du téléphone.
+  if (ussd && ussd.length <= 256) keyboard.push([{ text: "📋 Copier le code à composer", copy_text: { text: ussd } }]);
+  if (op.merchant_number && !ussd) keyboard.push([{ text: "📋 Copier le numéro marchand", copy_text: { text: op.merchant_number } }]);
+  if (op.code === "wave") keyboard.push([{ text: `📋 Copier le montant (${payment.amount})`, copy_text: { text: String(payment.amount) } }]);
   if (op.pay_link?.startsWith("https://")) keyboard.push([{ text: `💳 Ouvrir ${op.name}`, url: op.pay_link }]);
+  if (payment.checkout_url?.startsWith("https://")) keyboard.push([{ text: "🌐 Page de paiement (appel direct)", url: payment.checkout_url }]);
   keyboard.push(
     [{ text: "📞 Changer de numéro", callback_data: `op:${payment.id}:${op.code}` }, { text: "↩️ Autre moyen", callback_data: `pay:${payment.id}` }],
     ...paymentFooter(payment.id),
