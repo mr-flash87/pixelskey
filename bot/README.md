@@ -16,7 +16,16 @@ solde rechargeable, parrainage et alertes admin.
 | 📦 Historique et accès dans « Mes commandes » | 🗂️ `/sync`, `/produits`, `/publier`, `/prix`, `/stock`, `/nouveau` |
 | 🎁 Lien de parrainage : % du 1er achat du filleul crédité au parrain | 👤 `/crediter`, `/bloquer` |
 
-Liste complète des commandes admin : `/aideadmin` dans le bot.
+### Tableau de bord admin
+
+`/admin` (ou le bouton « 🛠️ Administration » de l'accueil, visible seulement par les admins) ouvre un
+tableau de bord à boutons : ventes du jour, livraisons à traiter (relancer, racheter, lier, livrer à la main,
+rembourser), dernières commandes, produits (publier/masquer, prix, nom, description, catégorie, stock),
+**nouveau produit** via un formulaire guidé (nom → catégorie → prix → description → confirmation → stock),
+clients (fiche, créditer/retirer du solde, bloquer), fournisseurs (soldes, marges, synchro) et réglages
+(parrainage, recharge min/max, marges). Taper une commande « / » annule le formulaire en cours.
+
+Les commandes texte restent disponibles : `/aideadmin` dans le bot.
 
 ## Architecture
 

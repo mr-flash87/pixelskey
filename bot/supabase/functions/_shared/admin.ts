@@ -1,15 +1,20 @@
-// Commandes d'administration (réservées aux ADMIN_CHAT_IDS).
+// Actions d'administration (réservées aux ADMIN_CHAT_IDS), partagées par le tableau de bord
+// à boutons (admin_panel.ts) et par les commandes texte (/relancer, /prix…), toujours disponibles.
 import { db } from "./db.ts";
 import { syncCatalogs } from "./catalog.ts";
 import { deliverOrder, deliveryMessages } from "./fulfillment.ts";
-import { syncableSuppliers } from "./suppliers/registry.ts";
 import { esc, fcfa, tg } from "./telegram.ts";
 import { getCommunity } from "./community.ts";
 
 export const ADMIN_HELP = `🛠️ <b>Administration</b>
 
+Le plus simple : <b>/admin</b> ouvre le tableau de bord à boutons
+(commandes à traiter, produits, nouveau produit, clients, réglages).
+
+Les commandes texte restent disponibles :
+
 <b>Suivi</b>
-/admin — ventes du jour, livraisons bloquées, soldes fournisseurs
+/admin — tableau de bord
 /bloquees — commandes à traiter
 /commande REF — détail d'une commande
 
@@ -35,14 +40,84 @@ export const ADMIN_HELP = `🛠️ <b>Administration</b>
 /groupe — groupe officiel (ajoutez le bot comme administrateur du groupe pour l'activer)
 /bloquer TELEGRAM_ID · /debloquer TELEGRAM_ID`;
 
-async function findOrder(ref: string) {
-  const { data } = await db().from("orders").select("*").eq("ref", ref.toUpperCase()).maybeSingle();
+export async function findOrder(ref: string) {
+  const { data } = await db().from("orders").select("*").eq("ref", ref.trim().toUpperCase()).maybeSingle();
   return data;
+}
+
+/** Relance une livraison ; `force` autorise un nouvel achat fournisseur (après vérification manuelle). */
+export async function relaunchOrder(ref: string, force = false): Promise<string> {
+  const o = await findOrder(ref);
+  if (!o) return "Commande introuvable.";
+  if (force) {
+    await db().from("orders").update({ supplier_attempted_at: null, delivery_status: "failed" }).eq("id", o.id).eq("status", "paid").in("delivery_status", ["failed", "uncertain"]).is("supplier_order_id", null);
+  }
+  const outcome = await deliverOrder(o.id, ["failed", "supplier_pending"]);
+  if (outcome === "skipped") {
+    return `${esc(o.ref)} : rien à relancer (statut ${esc(o.delivery_status)}).` + (o.delivery_status === "uncertain" ? " Vérifiez chez le fournisseur, puis « Racheter » ou « Lier »." : "");
+  }
+  const labels: Record<string, string> = { delivered: "✅ livrée", supplier_pending: "⏳ en cours chez le fournisseur", failed: "❌ toujours bloquée", uncertain: "⚠️ résultat incertain" };
+  return `${esc(o.ref)} → ${labels[outcome] ?? esc(outcome)}`;
+}
+
+export async function linkOrder(ref: string, supplierOrderId: string): Promise<string> {
+  const o = await findOrder(ref);
+  if (!o || !supplierOrderId.trim()) return "Commande ou identifiant fournisseur manquant.";
+  await db().from("orders").update({ supplier_order_id: supplierOrderId.trim(), delivery_status: "supplier_pending" }).eq("id", o.id).eq("status", "paid").neq("delivery_status", "delivered");
+  const outcome = await deliverOrder(o.id, ["supplier_pending"]);
+  return `${esc(o.ref)} rattachée à ${esc(supplierOrderId.trim())} → ${esc(outcome)}`;
+}
+
+export async function deliverManually(ref: string, contents: string[]): Promise<string> {
+  const o = await findOrder(ref);
+  if (!o) return "Commande introuvable.";
+  if (!contents.length) return "Aucun accès à envoyer.";
+  if (o.status !== "paid") return "Cette commande n'est pas payée.";
+  const { data: ok } = await db().rpc("record_delivery", { _order_id: o.id, _contents: contents, _supplier_order_id: null });
+  if (!ok) return "Déjà livrée.";
+  for (const m of deliveryMessages(o, contents)) await tg.send(o.telegram_id, m).catch(() => undefined);
+  return `✅ ${esc(o.ref)} livrée manuellement.`;
+}
+
+export async function refundOrder(ref: string): Promise<string> {
+  const o = await findOrder(ref);
+  if (!o) return "Commande introuvable.";
+  const { data: balance, error } = await db().rpc("refund_order_to_balance", { _order_id: o.id });
+  if (error || balance == null) return "Remboursement impossible (commande non payée, déjà livrée ou déjà remboursée).";
+  await tg.send(o.telegram_id, `↩️ <b>Commande ${esc(o.ref)} remboursée</b> : ${fcfa(o.amount)} crédités sur votre solde (nouveau solde ${fcfa(balance)}).`).catch(() => undefined);
+  return `✅ ${esc(o.ref)} remboursée sur le solde du client.`;
+}
+
+export async function runSync(supplier?: string): Promise<string> {
+  const reports = await syncCatalogs(supplier);
+  return reports.map((r) => r.error ? `❌ ${esc(r.supplier)} : ${esc(r.error)}` : `✅ ${esc(r.supplier)} : ${r.created} nouvelle(s), ${r.updated} mise(s) à jour, ${r.unavailable} indisponible(s)`).join("\n") || "Aucun fournisseur actif.";
+}
+
+export async function createManualProduct(p: { name: string; category: string; price: number; description: string; active: boolean }): Promise<number | null> {
+  const { data, error } = await db().from("products").insert({
+    supplier_id: "manual", name: p.name.slice(0, 120), category: p.category.slice(0, 40), price: p.price, price_locked: true,
+    is_active: p.active, description: p.description.slice(0, 3000),
+  }).select("id").single();
+  return error ? null : data.id;
+}
+
+export async function addStock(productId: number, lines: string[]): Promise<string> {
+  if (!lines.length) return "Aucun élément à ajouter.";
+  const { error } = await db().from("stock_items").insert(lines.map((content) => ({ product_id: productId, content })));
+  return error ? "Ajout impossible (produit introuvable ?)." : `✅ ${lines.length} élément(s) ajouté(s) au stock du produit ${productId}.`;
+}
+
+/** Ajoute (montant > 0) ou retire (montant < 0) du solde d'un client. */
+export async function creditUser(adminId: number, target: number, amount: number): Promise<string> {
+  const { data: balance, error } = await db().rpc("wallet_apply", { _telegram_id: target, _amount: amount, _kind: "admin", _ref: `admin-${adminId}-${Date.now()}` });
+  if (error) return `Impossible : ${esc(error.message)}`;
+  if (amount > 0) await tg.send(target, `💰 Votre solde a été crédité de ${fcfa(amount)}. Nouveau solde : ${fcfa(balance)}.`).catch(() => undefined);
+  return `✅ Nouveau solde de ${target} : ${fcfa(balance)}.`;
 }
 
 const reply = (chatId: number, html: string) => tg.send(chatId, html);
 
-/** Retourne true si le message était une commande admin. */
+/** Commandes texte. Retourne true si le message était une commande admin. */
 export async function handleAdminCommand(chatId: number, text: string): Promise<boolean> {
   const [firstLine, ...rest] = text.split("\n");
   const [rawCmd, ...args] = firstLine.trim().split(/\s+/);
@@ -50,29 +125,6 @@ export async function handleAdminCommand(chatId: number, text: string): Promise<
   const lines = rest.map((l) => l.trim()).filter(Boolean);
 
   switch (cmd) {
-    case "/admin": {
-      const since = new Date(); since.setUTCHours(0, 0, 0, 0);
-      const [{ data: sales }, { count: blocked }, { count: users }] = await Promise.all([
-        db().from("orders").select("amount").eq("status", "paid").gte("paid_at", since.toISOString()),
-        db().from("orders").select("id", { count: "exact", head: true }).eq("status", "paid").in("delivery_status", ["failed", "uncertain", "supplier_pending"]),
-        db().from("bot_users").select("telegram_id", { count: "exact", head: true }),
-      ]);
-      const lines = [
-        "📊 <b>Aujourd'hui</b>",
-        `Ventes : ${sales?.length ?? 0} — ${fcfa((sales ?? []).reduce((s, o) => s + o.amount, 0))}`,
-        `Livraisons à traiter : ${blocked ?? 0}${blocked ? " → /bloquees" : ""}`,
-        `Clients : ${users ?? 0}`,
-        "", "🏦 <b>Fournisseurs</b>",
-      ];
-      for (const a of syncableSuppliers()) {
-        if (!a.balance) continue;
-        try { const b = await a.balance(); lines.push(`${esc(a.id)} : ${Number.isFinite(b.amount) ? `${b.amount} ${esc(b.currency)}` : "n/d"}`); }
-        catch (e) { lines.push(`${esc(a.id)} : ⚠️ ${esc(e instanceof Error ? e.message : "erreur")}`); }
-      }
-      lines.push("", "/aideadmin — toutes les commandes");
-      await reply(chatId, lines.join("\n"));
-      return true;
-    }
     case "/aideadmin": await reply(chatId, ADMIN_HELP); return true;
     case "/bloquees": {
       const { data } = await db().from("orders").select("ref, product_name, delivery_status, delivery_error, paid_at").eq("status", "paid")
@@ -87,47 +139,17 @@ export async function handleAdminCommand(chatId: number, text: string): Promise<
       await reply(chatId, `<b>${esc(o.ref)}</b>\nClient : <code>${o.telegram_id}</code>\n${esc(o.product_name)} ×${o.quantity} — ${fcfa(o.amount)} (${esc(o.pay_method)})\nPaiement : ${esc(o.status)} · Livraison : ${esc(o.delivery_status)}\nFournisseur : ${esc(o.supplier_order_id ?? "—")}${o.supplier_attempted_at ? " (achat tenté)" : ""}\n${esc(o.delivery_error ?? "")}`);
       return true;
     }
-    case "/relancer": {
-      const o = await findOrder(args[0] ?? "");
-      if (!o) { await reply(chatId, "Commande introuvable."); return true; }
-      if (args[1] === "force") {
-        await db().from("orders").update({ supplier_attempted_at: null, delivery_status: "failed" }).eq("id", o.id).eq("status", "paid").in("delivery_status", ["failed", "uncertain"]).is("supplier_order_id", null);
-      }
-      const outcome = await deliverOrder(o.id, ["failed", "supplier_pending"]);
-      await reply(chatId, outcome === "skipped" ? `${esc(o.ref)} : rien à relancer (statut ${esc(o.delivery_status)}). Pour une commande « uncertain », vérifiez chez le fournisseur puis /relancer ${esc(o.ref)} force ou /lier.` : `${esc(o.ref)} → ${outcome}`);
+    case "/relancer": await reply(chatId, await relaunchOrder(args[0] ?? "", args[1] === "force")); return true;
+    case "/lier":
+      await reply(chatId, args[1] ? await linkOrder(args[0] ?? "", args[1]) : "Usage : /lier REF IDFOURNISSEUR");
       return true;
-    }
-    case "/lier": {
-      const o = await findOrder(args[0] ?? "");
-      if (!o || !args[1]) { await reply(chatId, "Usage : /lier REF IDFOURNISSEUR"); return true; }
-      await db().from("orders").update({ supplier_order_id: args[1], delivery_status: "supplier_pending" }).eq("id", o.id).eq("status", "paid").neq("delivery_status", "delivered");
-      const outcome = await deliverOrder(o.id, ["supplier_pending"]);
-      await reply(chatId, `${esc(o.ref)} rattachée à ${esc(args[1])} → ${outcome}`);
+    case "/livrer":
+      await reply(chatId, lines.length ? await deliverManually(args[0] ?? "", lines) : "Usage : /livrer REF puis, à la ligne, les accès (une ligne par élément).");
       return true;
-    }
-    case "/livrer": {
-      const o = await findOrder(args[0] ?? "");
-      if (!o || !lines.length) { await reply(chatId, "Usage : /livrer REF puis, à la ligne, les accès (une ligne par élément)."); return true; }
-      if (o.status !== "paid") { await reply(chatId, "Cette commande n'est pas payée."); return true; }
-      const { data: ok } = await db().rpc("record_delivery", { _order_id: o.id, _contents: lines, _supplier_order_id: null });
-      if (!ok) { await reply(chatId, "Déjà livrée."); return true; }
-      for (const m of deliveryMessages(o, lines)) await tg.send(o.telegram_id, m).catch(() => undefined);
-      await reply(chatId, `✅ ${esc(o.ref)} livrée manuellement.`);
-      return true;
-    }
-    case "/rembourser": {
-      const o = await findOrder(args[0] ?? "");
-      if (!o) { await reply(chatId, "Commande introuvable."); return true; }
-      const { data: balance, error } = await db().rpc("refund_order_to_balance", { _order_id: o.id });
-      if (error || balance == null) { await reply(chatId, "Remboursement impossible (commande non payée, déjà livrée ou déjà remboursée)."); return true; }
-      await tg.send(o.telegram_id, `↩️ <b>Commande ${esc(o.ref)} remboursée</b> : ${fcfa(o.amount)} crédités sur votre solde (nouveau solde ${fcfa(balance)}).`).catch(() => undefined);
-      await reply(chatId, `✅ ${esc(o.ref)} remboursée sur le solde.`);
-      return true;
-    }
+    case "/rembourser": await reply(chatId, await refundOrder(args[0] ?? "")); return true;
     case "/sync": {
       await reply(chatId, "🔄 Synchronisation en cours…");
-      const reports = await syncCatalogs(args[0]);
-      await reply(chatId, reports.map((r) => r.error ? `❌ ${esc(r.supplier)} : ${esc(r.error)}` : `✅ ${esc(r.supplier)} : ${r.created} nouvelle(s), ${r.updated} mise(s) à jour, ${r.unavailable} indisponible(s)`).join("\n") || "Aucun fournisseur actif.");
+      await reply(chatId, await runSync(args[0]));
       return true;
     }
     case "/produits": {
@@ -165,33 +187,27 @@ export async function handleAdminCommand(chatId: number, text: string): Promise<
     case "/groupe": {
       const c = await getCommunity();
       await reply(chatId, c
-        ? `👥 Groupe officiel : <b>${esc(c.title)}</b>
-Lien : ${esc(c.url || "—")}
-Adhésion obligatoire et annonces actives.`
+        ? `👥 Groupe officiel : <b>${esc(c.title)}</b>\nLien : ${esc(c.url || "—")}\nAdhésion obligatoire et annonces actives.`
         : "Aucun groupe officiel. Ajoutez le bot comme <b>administrateur</b> de votre groupe ou canal pour l'activer.");
       return true;
     }
     case "/nouveau": {
       const [price, category, name] = firstLine.replace(/^\/nouveau(@\S+)?\s*/i, "").split("|").map((s) => s.trim());
-      if (!Number.isInteger(Number(price)) || Number(price) < 100 || !category || !name) { await reply(chatId, "Usage : /nouveau 2500 | 🎬 Streaming | Netflix 1 mois"); return true; }
-      const { data, error } = await db().from("products").insert({ supplier_id: "manual", name, category, price: Number(price), price_locked: true, is_active: true, description: lines.join("\n") }).select("id").single();
-      await reply(chatId, error ? "Création impossible." : `✅ Produit ${data.id} créé. Ajoutez du stock : /stock ${data.id}`);
+      if (!Number.isInteger(Number(price)) || Number(price) < 100 || !category || !name) { await reply(chatId, "Usage : /nouveau 2500 | 🎬 Streaming | Netflix 1 mois\n(ou plus simple : /admin → ➕ Nouveau produit)"); return true; }
+      const id = await createManualProduct({ name, category, price: Number(price), description: lines.join("\n"), active: true });
+      await reply(chatId, id ? `✅ Produit ${id} créé. Ajoutez du stock : /stock ${id}` : "Création impossible.");
       return true;
     }
     case "/stock": {
       const id = Number(args[0]);
       if (!id || !lines.length) { await reply(chatId, "Usage : /stock ID puis, à la ligne, une clé/un compte par ligne."); return true; }
-      const { error } = await db().from("stock_items").insert(lines.map((content) => ({ product_id: id, content })));
-      await reply(chatId, error ? "Ajout impossible (produit introuvable ?)." : `✅ ${lines.length} élément(s) ajouté(s) au produit ${id}.`);
+      await reply(chatId, await addStock(id, lines));
       return true;
     }
     case "/crediter": {
       const target = Number(args[0]); const amount = Number(args[1]);
       if (!Number.isSafeInteger(target) || !Number.isInteger(amount) || amount === 0) { await reply(chatId, "Usage : /crediter TELEGRAM_ID MONTANT"); return true; }
-      const { data: balance, error } = await db().rpc("wallet_apply", { _telegram_id: target, _amount: amount, _kind: "admin", _ref: `admin-${chatId}-${Date.now()}` });
-      if (error) { await reply(chatId, `Impossible : ${esc(error.message)}`); return true; }
-      if (amount > 0) await tg.send(target, `💰 Votre solde a été crédité de ${fcfa(amount)}. Nouveau solde : ${fcfa(balance)}.`).catch(() => undefined);
-      await reply(chatId, `✅ Nouveau solde de ${target} : ${fcfa(balance)}.`);
+      await reply(chatId, await creditUser(chatId, target, amount));
       return true;
     }
     case "/bloquer": case "/debloquer": {

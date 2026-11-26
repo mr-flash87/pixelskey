@@ -7,6 +7,7 @@ import { normalizePayerPhone } from "./flashpay.ts";
 import { botUsername, esc, tg, type TgUpdate, type TgUser } from "./telegram.ts";
 import * as ui from "./ui.ts";
 import { handleAdminCommand } from "./admin.ts";
+import { adminHome, handleAdminCallback, handleAdminInput } from "./admin_panel.ts";
 import { handleMyChatMember, isCommunityMember, joinScreen } from "./community.ts";
 
 type Screen = { text: string; keyboard: import("./telegram.ts").Keyboard };
@@ -35,6 +36,8 @@ export async function upsertUser(from: TgUser, referralCode?: string): Promise<B
   }
   return data as BotUser;
 }
+
+const isAdmin = (user: BotUser) => adminIds().includes(user.telegram_id);
 
 const setState = (id: number, state: string | null, data: Record<string, unknown> = {}) =>
   db().from("bot_users").update({ state, state_data: data }).eq("telegram_id", id);
@@ -123,11 +126,15 @@ async function handleCallback(update: NonNullable<TgUpdate["callback_query"]>, u
           return;
         }
         toast = "✅ Bienvenue !";
-        await show(ui.homeScreen(update.from.first_name, user.balance));
+        await show(ui.homeScreen(update.from.first_name, user.balance, isAdmin(user)));
         break;
       }
       case "noop": break;
-      case "home": { const s = ui.homeScreen(update.from.first_name, user.balance); await show(s); break; }
+      case "a":
+        if (!isAdmin(user)) { toast = "Action inconnue."; break; }
+        toast = await handleAdminCallback(chatId, mid, update.data ?? "", user);
+        break;
+      case "home": { const s = ui.homeScreen(update.from.first_name, user.balance, isAdmin(user)); await show(s); break; }
       case "help": await show({ text: ui.helpText(), keyboard: [ui.homeRow()] }); break;
       case "cats": await show(ui.categoriesScreen(await categories())); break;
       case "cat": await show(await categoryScreen(Number(a), Number(b))); break;
@@ -197,8 +204,19 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
   const text = (msg.text ?? "").trim();
   if (msg.chat.type !== "private") return;
 
-  if (text.startsWith("/") && adminIds().includes(user.telegram_id)) {
-    if (await handleAdminCommand(chatId, text)) return;
+  if (isAdmin(user)) {
+    // Formulaire admin en cours : la réponse tapée lui est destinée (une commande « / » l'annule).
+    if (user.state === "adm" && !text.startsWith("/")) { await handleAdminInput(chatId, text, user); return; }
+    if (text.split(/\s+/)[0].split("@")[0].toLowerCase() === "/admin") {
+      await setState(user.telegram_id, null);
+      const s = await adminHome();
+      await tg.send(chatId, s.text, s.keyboard);
+      return;
+    }
+    if (text.startsWith("/") && await handleAdminCommand(chatId, text)) {
+      if (user.state === "adm") await setState(user.telegram_id, null);
+      return;
+    }
   }
   const command = text.split(/\s+/)[0].split("@")[0].toLowerCase();
   const reply = (s: Screen) => tg.send(chatId, s.text, s.keyboard);
@@ -207,7 +225,7 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
       case "/start": {
         await setState(user.telegram_id, null);
         const productId = text.match(/^\/start\s+p_(\d+)$/)?.[1];
-        await reply(productId ? await productScreen(Number(productId), user) : ui.homeScreen(msg.from?.first_name, user.balance));
+        await reply(productId ? await productScreen(Number(productId), user) : ui.homeScreen(msg.from?.first_name, user.balance, isAdmin(user)));
         return;
       }
       case "/boutique": await reply(ui.categoriesScreen(await categories())); return;
@@ -220,7 +238,7 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
       const { payment_id, operator } = user.state_data as { payment_id?: string; operator?: string };
       const phone = normalizePayerPhone(text);
       if (!phone) { await tg.send(chatId, "Numéro invalide. Envoyez les <b>8 chiffres</b> du numéro qui va payer, par exemple <code>70123456</code>."); return; }
-      if (!payment_id || !operator) { await setState(user.telegram_id, null); await reply(ui.homeScreen(msg.from?.first_name, user.balance)); return; }
+      if (!payment_id || !operator) { await setState(user.telegram_id, null); await reply(ui.homeScreen(msg.from?.first_name, user.balance, isAdmin(user))); return; }
       const { payment, operator: op } = await submitPayer(user.telegram_id, payment_id, operator, phone);
       await setState(user.telegram_id, null);
       await reply(ui.operatorInstructionsScreen(payment, op, phone));
@@ -233,7 +251,7 @@ async function handleMessage(msg: NonNullable<TgUpdate["message"]>, user: BotUse
       await startTopup(chatId, undefined, user, amount);
       return;
     }
-    await reply(ui.homeScreen(msg.from?.first_name, user.balance));
+    await reply(ui.homeScreen(msg.from?.first_name, user.balance, isAdmin(user)));
   } catch (e) {
     if (e instanceof UserError) { await tg.send(chatId, `⚠️ ${esc(e.message)}`); return; }
     throw e;

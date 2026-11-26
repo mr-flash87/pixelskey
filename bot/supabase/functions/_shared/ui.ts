@@ -16,7 +16,7 @@ const categoryEmoji = (category: string) => category.match(/^\p{Extended_Pictogr
 /** Raccourcit un libellé de bouton (Telegram coupe les boutons trop longs). */
 const short = (s: string, max: number) => (s.length > max ? s.slice(0, max - 1).trimEnd() + "…" : s);
 
-export function homeScreen(firstName: string | undefined, balance: number) {
+export function homeScreen(firstName: string | undefined, balance: number, isAdmin = false) {
   const text = [
     `✨ <b>${esc(SHOP_NAME().toUpperCase())}</b> ✨`,
     "<i>Vos abonnements premium, livrés en quelques minutes</i>",
@@ -37,6 +37,7 @@ export function homeScreen(firstName: string | undefined, balance: number) {
     [{ text: "🎁 Parrainage", callback_data: "ref" }, { text: "❓ Aide", callback_data: "help" }],
   ];
   if (support) keyboard.push([{ text: "💬 Contacter le support", url: `https://t.me/${support.replace(/^@/, "")}` }]);
+  if (isAdmin) keyboard.push([{ text: "🛠️ Administration", callback_data: "a:home" }]);
   return { text, keyboard };
 }
 
