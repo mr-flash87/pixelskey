@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Digital Pass BF — promo</title>
+<style>
+  :root {
+    --ink: #0B1020; --muted: #5B6478; --bg: #F4F5FB;
+    --violet: #6C4DFF; --cyan: #00B8F0; --pink: #FF4D8D;
+    --grad: linear-gradient(100deg, #6C4DFF 0%, #00B8F0 55%, #22D3A6 100%);
+    --font: "Inter", "Noto Color Emoji", sans-serif;
+    --display: "Inter Display", "Inter", "Noto Color Emoji", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); font-family: var(--font); color: var(--ink); }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  .abs { position: absolute; will-change: transform, opacity, filter; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(140px); opacity: .42; }
+  .center { left: 0; right: 0; text-align: center; }
+  .h1 { font-family: var(--display); font-weight: 900; font-size: 128px; line-height: 1.0; letter-spacing: -4px; }
+  .h2 { font-family: var(--display); font-weight: 800; font-size: 92px; line-height: 1.04; letter-spacing: -3px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { font-size: 40px; font-weight: 500; color: var(--muted); letter-spacing: -.5px; }
+  .line { display: block; overflow: hidden; padding-bottom: 10px; }
+  .line > span { display: inline-block; will-change: transform; }
+  .pill { display: inline-flex; align-items: center; gap: 14px; padding: 18px 34px; border-radius: 999px; background: #fff; box-shadow: 0 10px 40px rgba(16,24,64,.08); font-size: 34px; font-weight: 600; }
+
+  /* Tuiles d'icônes (les fonds blancs disparaissent grâce à multiply) */
+  .icon { position: absolute; background-size: cover; background-position: center; mix-blend-mode: multiply; }
+  .tile { position: absolute; border-radius: 64px; overflow: hidden; background: #fff; box-shadow: 0 30px 70px rgba(16,24,64,.12), 0 4px 12px rgba(16,24,64,.06); }
+  .tile .img { position: absolute; inset: 0; background-size: cover; background-position: center; mix-blend-mode: multiply; }
+  .tile .label { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-size: 26px; font-weight: 700; color: var(--ink); }
+  .tile.dark .label { color: #fff; }
+
+  /* Opérateurs */
+  .op { position: absolute; left: 160px; width: 760px; height: 160px; border-radius: 48px; display: flex; align-items: center; gap: 34px; padding: 0 44px; color: #fff; font-size: 56px; font-weight: 800; letter-spacing: -1px; box-shadow: 0 30px 60px rgba(16,24,64,.18); }
+  .op .dot { width: 92px; height: 92px; border-radius: 28px; background: rgba(255,255,255,.22); display: grid; place-items: center; font-size: 40px; font-weight: 900; }
+
+  /* Téléphone + Telegram */
+  #phone { position: absolute; left: 150px; top: 330px; width: 780px; height: 1520px; border-radius: 96px; background: #0E0F14; padding: 22px; box-shadow: 0 60px 120px rgba(16,24,64,.28), inset 0 0 0 3px #2A2D38; }
+  #screen { position: relative; width: 100%; height: 100%; border-radius: 76px; overflow: hidden; background: #fff; }
+  .status { position: absolute; top: 0; left: 0; right: 0; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 18px 56px 0; font-size: 26px; font-weight: 700; z-index: 5; }
+  .notch { position: absolute; top: 16px; left: 50%; width: 220px; height: 52px; margin-left: -110px; border-radius: 30px; background: #0E0F14; z-index: 6; }
+  .tg-head { position: absolute; top: 70px; left: 0; right: 0; height: 104px; display: flex; align-items: center; gap: 22px; padding: 0 30px; background: #fff; border-bottom: 1px solid #E8EAF0; z-index: 4; }
+  .tg-head .backarrow { font-size: 44px; color: #3390EC; width: 30px; }
+  .avatar { width: 70px; height: 70px; border-radius: 50%; background: var(--grad); display: grid; place-items: center; color: #fff; font-weight: 900; font-size: 28px; letter-spacing: -1px; }
+  .tg-head .name { font-size: 30px; font-weight: 700; }
+  .tg-head .botlbl { font-size: 23px; color: #8A93A6; margin-top: 2px; }
+  .chat { position: absolute; top: 174px; bottom: 108px; left: 0; right: 0; background:
+            radial-gradient(circle at 20% 30%, rgba(108,77,255,.10), transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(0,184,240,.12), transparent 45%),
+            linear-gradient(160deg, #DDE9D2, #C9DDBD 50%, #D7E6C8); overflow: hidden; }
+  .snap { position: absolute; left: 0; right: 0; bottom: 0; top: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 0 22px 22px; gap: 14px; }
+  .msg { align-self: flex-start; max-width: 92%; }
+  .bubble { background: #fff; border-radius: 26px 26px 26px 8px; padding: 18px 24px 16px; font-size: 28px; line-height: 1.36; box-shadow: 0 1px 2px rgba(0,0,0,.12); white-space: pre-line; }
+  .bubble b { font-weight: 800; }
+  .bubble code { font-family: "JetBrains Mono", monospace; font-size: 25px; color: #C2185B; background: #F4F0F7; padding: 2px 8px; border-radius: 8px; }
+  .bubble .hr { display: block; color: #B9C0CC; letter-spacing: -2px; line-height: 1.1; }
+  .bubble .time { display: block; text-align: right; font-size: 19px; color: #9AA3B2; margin-top: 2px; }
+  .kb { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .kb .row { display: flex; gap: 8px; }
+  .kb .btn { flex: 1; text-align: center; padding: 18px 10px; border-radius: 18px; background: rgba(30, 60, 30, .34); color: #fff; font-size: 25px; font-weight: 600; backdrop-filter: blur(6px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user { align-self: flex-end; background: #E1FEC6; border-radius: 26px 26px 8px 26px; padding: 16px 24px; font-size: 28px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .user .time { font-size: 19px; color: #5FA24E; margin-left: 12px; font-weight: 500; }
+  .tg-input { position: absolute; bottom: 0; left: 0; right: 0; height: 108px; background: #fff; border-top: 1px solid #E8EAF0; display: flex; align-items: center; gap: 22px; padding: 0 30px 18px; font-size: 28px; color: #9AA3B2; }
+  .tg-input .field { flex: 1; }
+  .toast { position: absolute; top: 200px; left: 50%; transform: translateX(-50%); background: rgba(20,22,30,.86); color: #fff; font-size: 25px; font-weight: 600; padding: 16px 30px; border-radius: 18px; z-index: 8; white-space: nowrap; }
+  .tap { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; background: rgba(255,255,255,.55); border: 4px solid rgba(255,255,255,.95); box-shadow: 0 0 0 10px rgba(108,77,255,.25), 0 10px 30px rgba(0,0,0,.25); z-index: 20; pointer-events: none; }
+
+  .caption { position: absolute; left: 0; right: 0; top: 120px; text-align: center; }
+  .caption .step { display: inline-flex; align-items: center; gap: 18px; padding: 20px 40px; border-radius: 999px; background: #fff; box-shadow: 0 14px 40px rgba(16,24,64,.10); font-family: var(--display); font-size: 50px; font-weight: 800; letter-spacing: -1.5px; }
+  .caption .num { width: 64px; height: 64px; border-radius: 50%; background: var(--grad); color: #fff; display: grid; place-items: center; font-size: 36px; }
+
+  .card { position: absolute; left: 110px; width: 860px; padding: 44px 48px; border-radius: 48px; background: #fff; display: flex; gap: 36px; align-items: center; box-shadow: 0 30px 70px rgba(16,24,64,.10); }
+  .card .ic { width: 124px; height: 124px; border-radius: 36px; display: grid; place-items: center; font-size: 64px; flex: none; }
+  .card .t { font-family: var(--display); font-size: 50px; font-weight: 800; letter-spacing: -1.5px; }
+  .card .d { font-size: 32px; color: var(--muted); margin-top: 6px; }
+
+  .logo { width: 220px; height: 220px; border-radius: 64px; background: var(--grad); display: grid; place-items: center; box-shadow: 0 40px 90px rgba(108,77,255,.35); }
+  .cta { display: inline-flex; align-items: center; gap: 22px; padding: 34px 64px; border-radius: 999px; background: #2AABEE; color: #fff; font-size: 52px; font-weight: 800; letter-spacing: -1px; box-shadow: 0 30px 60px rgba(42,171,238,.35); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <!-- Fond animé -->
+  <div class="blob" id="b1" style="width:760px;height:760px;background:#7C5CFF;"></div>
+  <div class="blob" id="b2" style="width:700px;height:700px;background:#22D3EE;"></div>
+  <div class="blob" id="b3" style="width:560px;height:560px;background:#FF8A3D;opacity:.28"></div>
+
+  <!-- ============ SCÈNE 1 : accroche ============ -->
+  <div id="s1" class="abs" style="inset:0">
+    <div class="abs center" style="top:330px"><span class="pill" id="s1pill">⚡ Nouveau sur Telegram</span></div>
+    <div class="abs center h1" style="top:520px">
+      <span class="line"><span id="s1l1">Tes abonnements</span></span>
+      <span class="line"><span id="s1l2" class="grad">premium</span></span>
+      <span class="line"><span id="s1l3">sans carte</span></span>
+      <span class="line"><span id="s1l4">bancaire.</span></span>
+    </div>
+    <div class="tile" id="s1i1" style="left:70px;top:110px;width:240px;height:240px"><div class="img" style="background-image:url(assets/gemini.jpg);background-size:150%"></div></div>
+    <div class="tile" id="s1i2" style="left:770px;top:130px;width:240px;height:240px"><div class="img" style="background-image:url(assets/canva.jpg);background-size:125%"></div></div>
+    <div class="tile" id="s1i3" style="left:70px;top:1330px;width:270px;height:270px"><div class="img" style="background-image:url(assets/spotify.jpg);background-size:125%"></div></div>
+    <div class="tile" id="s1i4" style="left:405px;top:1440px;width:270px;height:270px"><div class="img" style="background-image:url(assets/chatgpt.jpg);background-size:220%;background-position:50% 16%"></div></div>
+    <div class="tile dark" id="s1i5" style="left:740px;top:1330px;width:270px;height:270px;background:#000"><div class="img" style="background-image:url(assets/capcut.jpg);mix-blend-mode:normal;background-size:150%"></div></div>
+  </div>
+
+  <!-- ============ SCÈNE 2 : catalogue ============ -->
+  <div id="s2" class="abs" style="inset:0">
+    <div class="abs center h2" style="top:200px"><span class="line"><span id="s2t1"><span class="grad">+70</span> services</span></span><span class="line"><span id="s2t2">premium</span></span></div>
+    <div class="abs center sub" id="s2sub" style="top:430px">IA · Design · Streaming · Productivité</div>
+    <div id="grid"></div>
+    <div class="abs center" id="s2chips" style="top:1690px; display:flex; justify-content:center; gap:18px">
+      <span class="pill">🤖 IA</span><span class="pill">🎨 Design</span><span class="pill">🎬 Streaming</span><span class="pill">💼 Pro</span>
+    </div>
+  </div>
+
+  <!-- ============ SCÈNE 3 : paiement ============ -->
+  <div id="s3" class="abs" style="inset:0">
+    <div class="abs center h2" style="top:300px"><span class="line"><span id="s3t1">Paie avec ton</span></span><span class="line"><span id="s3t2" class="grad">Mobile Money</span></span></div>
+    <div class="op" id="op1" style="top:720px;background:linear-gradient(120deg,#FF7900,#FF9A3C)"><div class="dot">OM</div>Orange Money</div>
+    <div class="op" id="op2" style="top:920px;background:linear-gradient(120deg,#005BAA,#1E7FD6)"><div class="dot">MM</div>Moov Money</div>
+    <div class="op" id="op3" style="top:1120px;background:linear-gradient(120deg,#1DC4FF,#4FD8FF)"><div class="dot">W</div>Wave</div>
+    <div class="abs center sub" id="s3sub" style="top:1400px;font-size:44px;color:var(--ink);font-weight:700">Pas de carte bancaire. Pas de stress. 🙌</div>
+  </div>
+
+  <!-- ============ SCÈNE 4 : démo du bot ============ -->
+  <div id="s4" class="abs" style="inset:0">
+    <div class="caption" id="cap1"><span class="step"><span class="num">1</span>Choisis ton service</span></div>
+    <div class="caption" id="cap2"><span class="step"><span class="num">2</span>Paie en Mobile Money</span></div>
+    <div class="caption" id="cap3"><span class="step"><span class="num">3</span>Reçois tes accès ⚡</span></div>
+    <div id="phone">
+      <div id="screen">
+        <div class="notch"></div>
+        <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+        <div class="tg-head"><span class="backarrow">‹</span><div class="avatar">DP</div><div><div class="name">Digital Pass BF</div><div class="botlbl">bot</div></div></div>
+        <div class="chat" id="chat"></div>
+        <div class="tg-input"><span>📎</span><span class="field">Message</span><span>🎤</span></div>
+        <div class="toast" id="toast">📋 Copié dans le presse-papiers</div>
+        <div class="tap" id="tap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SCÈNE 5 : avantages ============ -->
+  <div id="s5" class="abs" style="inset:0">
+    <div class="abs center h2" style="top:300px"><span class="line"><span id="s5t1">Simple. Rapide.</span></span><span class="line"><span id="s5t2" class="grad">Automatique.</span></span></div>
+    <div class="card" id="c1" style="top:640px"><div class="ic" style="background:#EEE9FF">⚡</div><div><div class="t">Livraison auto</div><div class="d">24 h/24, en quelques minutes</div></div></div>
+    <div class="card" id="c2" style="top:900px"><div class="ic" style="background:#E2F7FE">🔐</div><div><div class="t">Accès sauvegardés</div><div class="d">Toujours dans « Mes commandes »</div></div></div>
+    <div class="card" id="c3" style="top:1160px"><div class="ic" style="background:#FFEFE3">🎁</div><div><div class="t">Parrainage</div><div class="d">Invite tes amis, gagne du solde</div></div></div>
+  </div>
+
+  <!-- ============ SCÈNE 6 : appel à l'action ============ -->
+  <div id="s6" class="abs" style="inset:0">
+    <div id="orbit"></div>
+    <div class="abs" id="s6logo" style="left:430px;top:420px">
+      <div class="logo"><svg width="120" height="120" viewBox="0 0 24 24" fill="none"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" fill="#fff"/></svg></div>
+    </div>
+    <div class="abs center h2" style="top:720px"><span class="line"><span id="s6t1">Digital Pass</span></span><span class="line"><span id="s6t2" class="grad">BF</span></span></div>
+    <div class="abs center sub" id="s6sub" style="top:960px">Abonnements premium · Mobile Money · Livraison auto</div>
+    <div class="abs center" id="s6cta" style="top:1120px"><span class="cta">✈️ Ouvrir le bot</span></div>
+    <div class="abs center" id="s6user" style="top:1330px;font-family:var(--display);font-size:64px;font-weight:800;letter-spacing:-1.5px">@DigitalPassBf_bot</div>
+    <div class="abs center sub" id="s6url" style="top:1430px">t.me/DigitalPassBf_bot</div>
+  </div>
+</div>
+
+<script>
+/* ---------- Outils d'animation (rendu déterministe : render(t) dessine l'image à l'instant t) ---------- */
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const E = {
+  out: (t) => 1 - Math.pow(1 - t, 3),
+  outQuint: (t) => 1 - Math.pow(1 - t, 5),
+  inOut: (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  in: (t) => t * t * t,
+  back: (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+const p = (t, a, b, ease = E.out) => ease(clamp((t - a) / (b - a)));
+const lerp = (a, b, k) => a + (b - a) * k;
+function set(el, { x = 0, y = 0, s = 1, r = 0, o = 1, blur = 0 } = {}) {
+  if (typeof el === "string") el = $(el);
+  el.style.transform = `translate(${x}px, ${y}px) scale(${s}) rotate(${r}deg)`;
+  el.style.opacity = o;
+  el.style.filter = blur > 0.05 ? `blur(${blur}px)` : "none";
+}
+/** Visibilité d'une scène : entrée [a, a+fi], sortie [b-fo, b]. */
+const scene = (t, a, b, fi = .5, fo = .5) => (t < a || t > b ? 0 : Math.min(p(t, a, a + fi), 1 - p(t, b - fo, b, E.in)));
+/** Ligne de texte qui monte depuis un masque. */
+const reveal = (id, t, start, end, outStart, outEnd) => {
+  const k = p(t, start, end, E.outQuint), q = outStart ? p(t, outStart, outEnd, E.in) : 0;
+  set(id, { y: lerp(140, 0, k) - q * 120, o: k * (1 - q) });
+};
+
+/* ---------- Grille du catalogue ---------- */
+const tiles = [
+  ["chatgpt.jpg", "ChatGPT", "220%", "50% 16%"], ["gemini.jpg", "Gemini", "150%", "center"], ["canva.jpg", "Canva", "125%", "center"],
+  ["capcut.jpg", "CapCut", "150%", "center", true], ["adobe.jpg", "Adobe", "120%", "70% 45%"], ["linkedin.jpg", "LinkedIn", "125%", "center"],
+  ["spotify.jpg", "Spotify", "125%", "center"], ["podium.jpg", "Netflix · Prime", "135%", "50% 40%"], ["streaming.jpg", "Streaming", "cover", "center"],
+];
+const grid = $("grid");
+tiles.forEach(([img, label, size, pos, dark], i) => {
+  const col = i % 3, row = Math.floor(i / 3);
+  const d = document.createElement("div");
+  d.className = "tile" + (dark ? " dark" : "");
+  d.id = "t" + i;
+  Object.assign(d.style, { left: 60 + col * 330 + "px", top: 560 + row * 365 + "px", width: "300px", height: "335px", background: dark ? "#000" : "#fff" });
+  d.innerHTML = `<div class="img" style="background-image:url(assets/${img});background-size:${size};background-position:${pos};bottom:60px;${dark ? "mix-blend-mode:normal" : ""}"></div><div class="label">${label}</div>`;
+  grid.appendChild(d);
+});
+
+/* ---------- Orbite d'icônes (scène finale) ---------- */
+const orbitImgs = [
+  ["gemini.jpg", 60, 170, "150%", "center"], ["canva.jpg", 840, 210, "125%", "center"], ["chatgpt.jpg", 70, 1600, "220%", "50% 16%"],
+  ["spotify.jpg", 840, 1620, "125%", "center"], ["linkedin.jpg", 470, 1700, "125%", "center"], ["podium.jpg", 450, 120, "135%", "50% 40%"],
+];
+orbitImgs.forEach(([img, left, top, size, pos], i) => {
+  const d = document.createElement("div");
+  d.className = "tile";
+  d.id = "o" + i;
+  Object.assign(d.style, { width: "170px", height: "170px", left: left + "px", top: top + "px", borderRadius: "48px" });
+  d.innerHTML = `<div class="img" style="background-image:url(assets/${img});background-size:${size};background-position:${pos}"></div>`;
+  $("orbit").appendChild(d);
+});
+
+/* ---------- Écrans du bot (textes repris du vrai bot) ---------- */
+const HR = '<span class="hr">━━━━━━━━━━━━━━━━</span>';
+const kb = (rows) => `<div class="kb">${rows.map((r) => `<div class="row">${r.map(([txt, id]) => `<div class="btn"${id ? ` id="${id}"` : ""}>${txt}</div>`).join("")}</div>`).join("")}</div>`;
+const bot = (html, rows = [], time = "9:41") => `<div class="msg"><div class="bubble">${html}<span class="time">${time}</span></div>${rows.length ? kb(rows) : ""}</div>`;
+const user = (txt) => `<div class="user">${txt}<span class="time">9:42 ✓✓</span></div>`;
+
+const screens = {
+  home: bot(`✨ <b>DIGITAL PASS BF</b> ✨
+<i>Vos abonnements premium, livrés en quelques minutes</i>
+${HR}👋 Salut <b>Awa</b> !
+
+⚡ Livraison <b>automatique</b> 24 h/24
+📱 Paiement <b>Orange Money · Moov Money · Wave</b>
+🔐 Vos accès gardés dans <b>Mes commandes</b>
+🎁 Parrainez vos amis et gagnez du solde
+${HR}💰 Votre solde : <b>0 F</b>`, [[["🛍️ Voir la boutique", "tapHome"]], [["📦 Mes commandes"], ["💰 Mon solde"]], [["🎁 Parrainage"], ["❓ Aide"]]]),
+  cats: bot(`🛍️ <b>BOUTIQUE</b>
+${HR}<b>72</b> services disponibles.
+Choisissez une catégorie 👇`, [[["🤖 IA  ·  38 offres"]], [["🎨 Design & Vidéo  ·  12 offres", "tapCat"]], [["💼 Productivité  ·  9 offres"]], [["🔒 VPN & Sécurité  ·  4 offres"]], [["🎬 Streaming  ·  2 offres"]], [["🏠 Accueil"]]]),
+  list: bot(`<b>🎨 DESIGN & VIDÉO</b>
+${HR}Touchez une offre pour voir le détail.`, [[["CapCut Pro — 1 mois · 2 250 F", "tapProd"]], [["Adobe Creative Cloud Pro · 10 800 F"]], [["Figma Pro Éducation — 2 ans · 2 250 F"]], [["CapCut Pro Individuel — 7 mois · 14 400 F"]], [["⬅️ Catégories"], ["🏠 Accueil"]]]),
+  product: bot(`🎨 <b>CapCut Pro — 1 mois (formule Équipe)</b>
+${HR}CapCut Pro formule Équipe pendant 1 mois, privé.
+• Montage vidéo avancé et effets Pro
+• 650 à 1 200 crédits IA
+Garantie sur toute la durée.
+${HR}💵 Prix : <b>2 250 F</b>
+✅ Disponible
+⚡ Livraison automatique, en quelques minutes`, [[["🛒 Acheter · 2 250 F", "tapBuy"]], [["⬅️ Retour"], ["🏠 Accueil"]]]),
+  paymethod: bot(`💳 <b>PAIEMENT</b>
+${HR}🧾 Commande CMD-7F3A21C4
+💵 Montant : <b>2 250 F</b>
+${HR}Choisissez votre moyen de paiement 👇
+
+⏱️ Ce paiement expire dans <b>15 minutes</b>.`, [[["🟠 Orange Money", "tapOrange"]], [["🔵 Moov Money"]], [["🌊 Wave"]], [["❌ Annuler"]]]),
+  number: bot(`🟠 <b>Orange Money</b>
+
+Envoyez le <b>numéro Orange Money qui va payer</b> (8 chiffres).`) + user("70 12 34 56"),
+  instructions: user("70 12 34 56") + bot(`🟠 <b>PAIEMENT ORANGE MONEY</b>
+${HR}📞 Votre numéro : <b>70123456</b>
+💵 Montant : <b>2 250 F</b>
+${HR}1️⃣ Touchez <b>📋 Copier le code</b>
+2️⃣ Collez-le dans l'appli <b>Téléphone</b> et appelez
+<code>*144*2*1*6•••••••*2250#</code>
+3️⃣ Confirmez avec votre code secret`, [[["📋 Copier le code à composer", "tapCopy"]], [["🔄 J'ai payé — vérifier"]]]),
+  delivered: bot(`✅ <b>Paiement reçu pour CMD-7F3A21C4</b>
+Livraison en cours…`) + bot(`✅ <b>Commande CMD-7F3A21C4 livrée</b>
+CapCut Pro — 1 mois (formule Équipe)
+
+<code>awa.capcut@•••••.com</code>
+<code>Mot de passe : ••••••••</code>
+
+🔐 Conservez ces accès en lieu sûr.`, [], "9:43"),
+};
+const chat = $("chat");
+const order = ["home", "cats", "list", "product", "paymethod", "number", "instructions", "delivered"];
+order.forEach((k) => { const d = document.createElement("div"); d.className = "snap"; d.id = "snap-" + k; d.innerHTML = screens[k]; chat.appendChild(d); });
+
+/* Chronologie de la démo : [écran, début, fin, bouton tapé, instant du tap] */
+const demo = [
+  ["home", 11.4, 13.3, "tapHome", 12.75],
+  ["cats", 13.3, 15.0, "tapCat", 14.45],
+  ["list", 15.0, 16.7, "tapProd", 16.15],
+  ["product", 16.7, 18.6, "tapBuy", 18.05],
+  ["paymethod", 18.6, 20.0, "tapOrange", 19.45],
+  ["number", 20.0, 21.2, null, 0],
+  ["instructions", 21.2, 23.4, "tapCopy", 22.35],
+  ["delivered", 23.4, 25.9, null, 0],
+];
+function centerOf(id) {
+  const el = $(id), sr = $("screen").getBoundingClientRect(), r = el.getBoundingClientRect();
+  const sc = sr.width / 736; // le téléphone peut être mis à l'échelle
+  return { x: (r.left + r.width / 2 - sr.left) / sc, y: (r.top + r.height / 2 - sr.top) / sc };
+}
+
+/* ---------- Rendu d'une image ---------- */
+window.render = function (t) {
+  // Fond : taches de couleur qui dérivent lentement
+  const blob = (id, x, y) => { $(id).style.transform = `translate(${x}px, ${y}px)`; };
+  blob("b1", -220 + Math.sin(t * .35) * 120, -180 + Math.cos(t * .3) * 90);
+  blob("b2", 560 + Math.cos(t * .28) * 140, 1260 + Math.sin(t * .33) * 120);
+  blob("b3", 640 + Math.sin(t * .4) * 100, 260 + Math.cos(t * .25) * 160);
+
+  /* Scène 1 : 0 → 3.8 */
+  const v1 = scene(t, 0, 3.8, .01, .45);
+  set("s1", { o: v1, s: 1 + p(t, 3.35, 3.8, E.in) * .08, blur: p(t, 3.35, 3.8, E.in) * 18 });
+  if (v1 > 0) {
+    const pk = p(t, .1, .7, E.back);
+    set("s1pill", { y: (1 - pk) * 40, o: p(t, .1, .5), s: .9 + pk * .1 });
+    ["s1l1", "s1l2", "s1l3", "s1l4"].forEach((id, i) => reveal(id, t, .35 + i * .16, 1.05 + i * .16));
+    [["s1i1", .6, -8], ["s1i2", .75, 7], ["s1i3", .9, -6], ["s1i4", 1.05, 5], ["s1i5", 1.2, 8]].forEach(([id, st, rot], i) => {
+      const k = p(t, st, st + .7, E.back);
+      set(id, { s: k, r: rot * (1 - k) + Math.sin(t * 1.4 + i) * 3, y: Math.sin(t * 1.1 + i * 1.7) * 14, o: clamp(k * 1.5) });
+    });
+  }
+
+  /* Scène 2 : 3.6 → 7.9 */
+  const v2 = scene(t, 3.6, 7.9, .4, .45);
+  set("s2", { o: v2, s: 1 - p(t, 7.45, 7.9, E.in) * .05, blur: p(t, 7.45, 7.9, E.in) * 16 });
+  if (v2 > 0) {
+    reveal("s2t1", t, 3.7, 4.3); reveal("s2t2", t, 3.85, 4.45);
+    set("s2sub", { y: (1 - p(t, 4.1, 4.7)) * 30, o: p(t, 4.1, 4.7) });
+    tiles.forEach((_, i) => {
+      const st = 4.0 + i * .08, k = p(t, st, st + .65, E.back);
+      set("t" + i, { s: .6 + .4 * k, o: clamp(k * 1.4), y: (1 - k) * 80 + Math.sin(t * 1.2 + i) * 6, r: Math.sin(t * .9 + i * 2) * 1.5 });
+    });
+    set("s2chips", { y: (1 - p(t, 5.0, 5.6)) * 40, o: p(t, 5.0, 5.6) });
+  }
+
+  /* Scène 3 : 7.8 → 10.9 */
+  const v3 = scene(t, 7.8, 10.9, .35, .4);
+  set("s3", { o: v3, blur: p(t, 10.5, 10.9, E.in) * 14 });
+  if (v3 > 0) {
+    reveal("s3t1", t, 7.9, 8.5); reveal("s3t2", t, 8.05, 8.65);
+    [["op1", 8.35, -1], ["op2", 8.55, 1], ["op3", 8.75, -1]].forEach(([id, st, dir]) => {
+      const k = p(t, st, st + .6, E.outQuint);
+      set(id, { x: dir * (1 - k) * 900, o: k, r: dir * (1 - k) * -4, y: Math.sin(t * 1.5 + st * 3) * 6 });
+    });
+    set("s3sub", { y: (1 - p(t, 9.3, 9.9)) * 30, o: p(t, 9.3, 9.9) });
+  }
+
+  /* Scène 4 : 10.8 → 25.9 — démo dans le téléphone */
+  const v4 = scene(t, 10.8, 25.9, .3, .45);
+  set("s4", { o: v4, s: 1 - p(t, 25.45, 25.9, E.in) * .06, blur: p(t, 25.45, 25.9, E.in) * 14 });
+  if (v4 > 0) {
+    const ph = p(t, 10.8, 11.6, E.outQuint);
+    set("phone", { y: (1 - ph) * 900, r: (1 - ph) * 6, s: .96 + ph * .04 });
+    const caps = [["cap1", 11.2, 16.7], ["cap2", 16.7, 23.4], ["cap3", 23.4, 25.9]];
+    caps.forEach(([id, a, b]) => {
+      const k = p(t, a, a + .45, E.back), q = p(t, b - .3, b, E.in);
+      set(id, { y: (1 - k) * -60 + q * -40, o: clamp(k * 1.3) * (1 - q), s: .85 + .15 * k });
+    });
+    let tapShown = false;
+    demo.forEach(([k, a, b, tapId, tapAt]) => {
+      const inK = p(t, a, a + .35, E.outQuint), outK = p(t, b - .2, b, E.in);
+      const last = k === "delivered";
+      set("snap-" + k, { o: (t >= a && t <= b) || (last && t > b) ? inK * (last ? 1 : 1 - outK) : 0, y: (1 - inK) * 40 });
+      if (tapId && t > tapAt - .35 && t < tapAt + .3) {
+        const c = centerOf(tapId), d = (t - tapAt) / .3;
+        const press = t < tapAt ? p(t, tapAt - .35, tapAt, E.out) : 1 - clamp(d);
+        $("tap").style.left = c.x + "px"; $("tap").style.top = c.y + "px";
+        set("tap", { s: t < tapAt ? 1.3 - .3 * press : 1 + clamp(d) * .6, o: press });
+        $(tapId).style.background = t >= tapAt ? "rgba(30,60,30,.55)" : "";
+        tapShown = true;
+      }
+    });
+    if (!tapShown) set("tap", { o: 0 });
+    const tk = p(t, 22.45, 22.7, E.back), tq = p(t, 23.1, 23.35, E.in);
+    $("toast").style.opacity = t > 22.45 && t < 23.35 ? clamp(tk) * (1 - tq) : 0;
+    $("toast").style.transform = `translateX(-50%) translateY(${(1 - tk) * -20}px) scale(${.9 + .1 * tk})`;
+  }
+
+  /* Scène 5 : 25.8 → 29.2 */
+  const v5 = scene(t, 25.8, 29.2, .35, .45);
+  set("s5", { o: v5, blur: p(t, 28.75, 29.2, E.in) * 14 });
+  if (v5 > 0) {
+    reveal("s5t1", t, 25.9, 26.5); reveal("s5t2", t, 26.05, 26.65);
+    ["c1", "c2", "c3"].forEach((id, i) => {
+      const st = 26.35 + i * .2, k = p(t, st, st + .6, E.back);
+      set(id, { x: (1 - k) * (i % 2 ? 700 : -700), o: clamp(k * 1.4), y: Math.sin(t * 1.3 + i) * 5 });
+    });
+  }
+
+  /* Scène 6 : 29.0 → fin */
+  const v6 = scene(t, 29.0, 40, .4, .01);
+  set("s6", { o: v6 });
+  if (v6 > 0) {
+    const lk = p(t, 29.1, 29.9, E.back);
+    set("s6logo", { s: lk, r: (1 - lk) * -20 + Math.sin(t * 1.6) * 3, o: clamp(lk * 1.5), y: Math.sin(t * 1.3) * 10 });
+    reveal("s6t1", t, 29.5, 30.1); reveal("s6t2", t, 29.65, 30.25);
+    set("s6sub", { y: (1 - p(t, 30.0, 30.6)) * 30, o: p(t, 30.0, 30.6) });
+    const ck = p(t, 30.3, 31.0, E.back);
+    set("s6cta", { s: (.8 + .2 * ck) * (1 + Math.max(0, Math.sin((t - 31) * 4)) * .03 * (t > 31 ? 1 : 0)), o: clamp(ck * 1.4) });
+    set("s6user", { y: (1 - p(t, 30.6, 31.2)) * 30, o: p(t, 30.6, 31.2) });
+    set("s6url", { o: p(t, 30.8, 31.4) });
+    orbitImgs.forEach((_, i) => {
+      const k = p(t, 29.3 + i * .09, 30.0 + i * .09, E.back);
+      set("o" + i, { s: k, o: clamp(k * 1.4), y: Math.sin(t * 1.2 + i * 1.3) * 14, r: Math.sin(t * .9 + i) * 5 });
+    });
+  }
+};
+window.DURATION = 33;
+window.render(0);
+</script>
+</body>
+</html>
