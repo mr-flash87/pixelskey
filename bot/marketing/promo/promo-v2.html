@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Digital Pass — promo v2</title>
+<style>
+  @font-face { font-family: "Jakarta"; font-weight: 500; src: url(assets/fonts/plus-jakarta-sans-latin-500-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jakarta"; font-weight: 700; src: url(assets/fonts/plus-jakarta-sans-latin-700-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jakarta"; font-weight: 800; src: url(assets/fonts/plus-jakarta-sans-latin-800-normal.woff2) format("woff2"); }
+  @font-face { font-family: "Jakarta"; font-weight: 500; src: url(assets/fonts/plus-jakarta-sans-latin-ext-500-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20CF; }
+  @font-face { font-family: "Jakarta"; font-weight: 800; src: url(assets/fonts/plus-jakarta-sans-latin-ext-800-normal.woff2) format("woff2"); unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20CF; }
+  :root {
+    --v: #5300D6; --v2: #7B3BFF; --ink: #120A2E; --white: #fff;
+    --grad: linear-gradient(100deg, #27B5FF 0%, #6A4BFF 50%, #B45CFF 100%);
+    --font: "Jakarta", "Noto Color Emoji", sans-serif;
+    --ui: "Inter", "Noto Color Emoji", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--v); font-family: var(--font); color: #fff; }
+  #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+  .layer { position: absolute; inset: 0; }
+  .abs { position: absolute; will-change: transform, opacity, filter; }
+  .center { left: 0; right: 0; text-align: center; }
+  .big { font-weight: 800; font-size: 150px; letter-spacing: -5px; line-height: 1; }
+  .h { font-weight: 800; font-size: 108px; letter-spacing: -3.5px; line-height: 1.08; }
+  .m { font-weight: 700; font-size: 64px; letter-spacing: -1.5px; line-height: 1.15; }
+  .s { font-weight: 500; font-size: 44px; letter-spacing: -.5px; }
+  .hl { display: inline-block; background: #fff; color: var(--v); padding: 0 .22em .06em; border-radius: .16em; }
+  .hlv { display: inline-block; background: var(--v); color: #fff; padding: 0 .22em .06em; border-radius: .16em; }
+  .vio { color: var(--v); }
+  .word { display: inline-block; will-change: transform, opacity, filter; }
+
+  /* Anneaux en orbite (style référence) */
+  .rings { position: absolute; left: 540px; top: 960px; width: 0; height: 0; }
+  .ring { position: absolute; border-radius: 50%; border: 2.5px solid rgba(255,255,255,.28); }
+  .ring .dot { position: absolute; width: 26px; height: 26px; margin: -13px; border-radius: 50%; background: #fff; box-shadow: 0 0 24px rgba(255,255,255,.8); }
+  .glow { position: absolute; border-radius: 50%; background: radial-gradient(circle, rgba(190,150,255,.95) 0%, rgba(150,100,255,.55) 45%, rgba(120,60,255,0) 70%); }
+
+  .tile { position: absolute; border-radius: 30%; overflow: hidden; background: #fff; box-shadow: 0 40px 80px rgba(20,0,60,.35); }
+  .tile .img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+
+  /* Légendes d'étape */
+  .cap { position: absolute; left: 0; right: 0; top: 70px; text-align: center; }
+  .badge { display: inline-block; padding: 12px 30px; border-radius: 999px; background: rgba(255,255,255,.16); border: 2px solid rgba(255,255,255,.35); font-size: 34px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+  .cap .m { margin-top: 22px; font-size: 66px; }
+
+  /* Téléphone */
+  #phone { position: absolute; left: 165px; top: 395px; width: 750px; height: 1470px; border-radius: 92px; background: #0E0F14; padding: 20px; box-shadow: 0 70px 140px rgba(15,0,50,.55), inset 0 0 0 3px #2A2D38; }
+  #screen { position: relative; width: 100%; height: 100%; border-radius: 74px; overflow: hidden; background: #fff; font-family: var(--ui); color: #0B1020; }
+  .notch { position: absolute; top: 16px; left: 50%; width: 210px; height: 50px; margin-left: -105px; border-radius: 30px; background: #0E0F14; z-index: 30; }
+  .status { position: absolute; top: 0; left: 0; right: 0; height: 70px; display: flex; justify-content: space-between; align-items: center; padding: 16px 54px 0; font-size: 25px; font-weight: 700; z-index: 29; color: #0B1020; }
+  .shot { position: absolute; inset: 0; background: #fff; }
+  .tg-head { position: absolute; top: 70px; left: 0; right: 0; height: 104px; display: flex; align-items: center; gap: 20px; padding: 0 28px; background: #fff; border-bottom: 1px solid #E8EAF0; z-index: 4; }
+  .tg-head .back { font-size: 46px; color: #3390EC; width: 26px; }
+  .av { width: 70px; height: 70px; border-radius: 50%; background: #0D0A2E url(assets/logo-mark-t.png) center/86% no-repeat; flex: none; }
+  .tg-head .name { font-size: 29px; font-weight: 700; }
+  .tg-head .sub { font-size: 22px; color: #8A93A6; margin-top: 2px; }
+  .chat { position: absolute; top: 174px; bottom: 104px; left: 0; right: 0; overflow: hidden;
+          background: radial-gradient(circle at 20% 30%, rgba(108,77,255,.10), transparent 40%), radial-gradient(circle at 80% 70%, rgba(0,184,240,.12), transparent 45%), linear-gradient(160deg, #DDE9D2, #C9DDBD 50%, #D7E6C8);
+          display: flex; flex-direction: column; justify-content: flex-end; padding: 0 20px 20px; gap: 14px; }
+  .chat.full { bottom: 0; }
+  .msg { align-self: flex-start; max-width: 93%; }
+  .bubble { background: #fff; border-radius: 26px 26px 26px 8px; padding: 17px 22px 14px; font-size: 26.5px; line-height: 1.36; box-shadow: 0 1px 2px rgba(0,0,0,.12); white-space: pre-line; }
+  .bubble b { font-weight: 800; }
+  .bubble code { font-family: "JetBrains Mono", monospace; font-size: 24px; color: #C2185B; background: #F4F0F7; padding: 2px 8px; border-radius: 8px; }
+  .bubble .hr { display: block; color: #B9C0CC; letter-spacing: -2px; line-height: 1.1; }
+  .bubble .time { display: block; text-align: right; font-size: 18px; color: #9AA3B2; margin-top: 2px; }
+  .kb { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+  .kb .row { display: flex; gap: 8px; }
+  .kb .btn { flex: 1; text-align: center; padding: 17px 10px; border-radius: 18px; background: rgba(30,60,30,.34); color: #fff; font-size: 24px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user { align-self: flex-end; background: #E1FEC6; border-radius: 26px 26px 8px 26px; padding: 15px 22px; font-size: 27px; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .user .time { font-size: 18px; color: #5FA24E; margin-left: 12px; font-weight: 500; }
+  .tg-input { position: absolute; bottom: 0; left: 0; right: 0; height: 104px; background: #fff; border-top: 1px solid #E8EAF0; display: flex; align-items: center; gap: 22px; padding: 0 30px 16px; font-size: 27px; color: #9AA3B2; }
+  .tg-input .field { flex: 1; }
+  .toast { position: absolute; top: 196px; left: 50%; transform: translateX(-50%); background: rgba(20,22,30,.88); color: #fff; font-size: 24px; font-weight: 600; padding: 15px 28px; border-radius: 18px; z-index: 25; white-space: nowrap; opacity: 0; }
+  .tap { position: absolute; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%; background: rgba(255,255,255,.55); border: 4px solid #fff; box-shadow: 0 0 0 12px rgba(123,59,255,.35), 0 10px 30px rgba(0,0,0,.25); z-index: 40; opacity: 0; }
+
+  /* Recherche Telegram */
+  .search-top { position: absolute; top: 76px; left: 0; right: 0; padding: 14px 24px; display: flex; align-items: center; gap: 18px; }
+  .search-field { flex: 1; height: 70px; border-radius: 22px; background: #F0F2F5; display: flex; align-items: center; gap: 14px; padding: 0 22px; font-size: 29px; color: #0B1020; }
+  .search-field .ph { color: #9AA3B2; }
+  .caret { display: inline-block; width: 3px; height: 34px; background: #3390EC; vertical-align: middle; }
+  .res-label { position: absolute; top: 190px; left: 0; right: 0; padding: 14px 30px; background: #F4F5F7; color: #6D7685; font-size: 23px; font-weight: 600; }
+  .res { position: absolute; left: 0; right: 0; display: flex; align-items: center; gap: 22px; padding: 18px 30px; border-bottom: 1px solid #EEF0F3; background: #fff; }
+  .res .av { width: 88px; height: 88px; }
+  .res .n { font-size: 30px; font-weight: 700; }
+  .res .u { font-size: 24px; color: #3390EC; margin-top: 4px; }
+  .res .g { font-size: 24px; color: #8A93A6; margin-top: 4px; }
+
+  /* Écran d'accueil du bot (avant /start) */
+  .intro-card { position: absolute; left: 70px; right: 70px; top: 330px; background: rgba(255,255,255,.95); border-radius: 30px; padding: 30px 32px; font-size: 25px; line-height: 1.42; box-shadow: 0 2px 6px rgba(0,0,0,.1); white-space: pre-line; }
+  .intro-card .t { font-weight: 800; font-size: 28px; margin-bottom: 10px; }
+  .start-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: #fff; border-top: 1px solid #E8EAF0; display: grid; place-items: center; }
+  .start-bar span { color: #3390EC; font-weight: 800; font-size: 32px; letter-spacing: 2px; padding: 18px 60px; border-radius: 18px; }
+
+  /* Composeur et USSD */
+  .dial-num { position: absolute; top: 250px; left: 30px; right: 30px; text-align: center; font-size: 50px; font-weight: 500; letter-spacing: 1px; color: #0B1020; font-family: var(--ui); }
+  .pad { position: absolute; top: 470px; left: 95px; width: 520px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 40px; }
+  .key { width: 140px; height: 140px; border-radius: 50%; background: #F0F2F5; display: grid; place-items: center; font-size: 56px; font-weight: 500; }
+  .call { position: absolute; left: 50%; top: 1180px; width: 150px; height: 150px; margin-left: -75px; border-radius: 50%; background: #2DC653; display: grid; place-items: center; font-size: 64px; color: #fff; box-shadow: 0 20px 40px rgba(45,198,83,.35); }
+  .dim { position: absolute; inset: 0; background: rgba(10,10,20,.55); }
+  .ussd { position: absolute; left: 60px; right: 60px; top: 470px; background: #fff; border-radius: 30px; padding: 40px 40px 26px; box-shadow: 0 30px 80px rgba(0,0,0,.35); font-size: 29px; line-height: 1.4; }
+  .ussd .pin { margin: 26px 0 10px; height: 74px; border-bottom: 3px solid #FF7900; font-size: 50px; letter-spacing: 18px; color: #0B1020; }
+  .ussd .acts { display: flex; justify-content: flex-end; gap: 40px; margin-top: 22px; font-weight: 800; color: #FF7900; font-size: 29px; letter-spacing: 1px; }
+
+  .cta { display: inline-flex; align-items: center; gap: 22px; padding: 36px 70px; border-radius: 999px; background: #fff; color: var(--v); font-size: 60px; font-weight: 800; letter-spacing: -1px; box-shadow: 0 30px 70px rgba(20,0,60,.35); }
+  .handle { display: inline-flex; align-items: center; gap: 18px; padding: 20px 40px; border-radius: 999px; background: #2AABEE; color: #fff; font-size: 48px; font-weight: 800; letter-spacing: -.5px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="layer" id="bgBase"></div>
+  <div class="layer" id="bgWipe"></div>
+
+  <!-- Anneaux en orbite partagés (intro, logo, fin) -->
+  <div class="rings abs" id="rings">
+    <div class="glow" id="ringGlow" style="width:620px;height:620px;left:-310px;top:-310px"></div>
+    <div class="ring" id="r1" style="width:640px;height:640px;left:-320px;top:-320px"><div class="dot" id="d1"></div></div>
+    <div class="ring" id="r2" style="width:980px;height:980px;left:-490px;top:-490px"><div class="dot" id="d2"></div></div>
+    <div class="ring" id="r3" style="width:1340px;height:1340px;left:-670px;top:-670px"><div class="dot" id="d3"></div></div>
+  </div>
+
+  <!-- A : marques -->
+  <div id="A" class="layer">
+    <div class="tile abs" id="Ai" style="left:390px;top:520px;width:300px;height:300px"><div class="img" id="AiImg"></div></div>
+    <div class="abs center big" id="Aw" style="top:900px"></div>
+  </div>
+
+  <!-- B : sans carte bancaire / c'est possible -->
+  <div id="B" class="layer">
+    <div class="abs" id="Bcard" style="left:390px;top:470px;width:300px;height:200px;border-radius:28px;background:linear-gradient(135deg,#ffffff,#d9ccff);box-shadow:0 30px 70px rgba(20,0,60,.35)">
+      <div style="position:absolute;left:0;right:0;top:44px;height:40px;background:#2a1460"></div>
+      <div style="position:absolute;left:30px;top:120px;width:70px;height:48px;border-radius:10px;background:#f4c542"></div>
+      <div id="Bx" style="position:absolute;left:50%;top:50%;width:330px;height:16px;margin:-8px 0 0 -165px;border-radius:8px;background:#FF3B5C;transform:rotate(-28deg)"></div>
+    </div>
+    <div class="abs center h" style="top:780px"><span class="word" id="B1">sans carte</span></div>
+    <div class="abs center h" style="top:910px"><span class="word" id="B2"><span class="hl">bancaire ?</span></span></div>
+    <div class="abs center big vio" style="top:800px"><span class="word" id="B3">C'est</span></div>
+    <div class="abs center big" style="top:960px"><span class="word" id="B4"><span class="hlv">possible.</span></span></div>
+  </div>
+
+  <!-- C : logo -->
+  <div id="C" class="layer">
+    <div class="abs center m" id="Cv" style="top:470px">Voici</div>
+    <img class="abs" id="Clogo" src="assets/logo-mark-t.png" style="left:223px;top:660px;width:634px">
+    <img class="abs" id="Cword" src="assets/logo-word-t.png" style="left:79px;top:1150px;width:922px">
+  </div>
+
+  <!-- Légendes d'étape -->
+  <div id="caps" class="layer"></div>
+
+  <!-- Téléphone -->
+  <div id="phone" class="abs">
+    <div id="screen">
+      <div class="notch"></div>
+      <div class="status"><span>9:41</span><span>📶 🔋</span></div>
+      <div id="shots"></div>
+      <div class="toast" id="toast">📋 Copié dans le presse-papiers</div>
+      <div class="tap" id="tap"></div>
+    </div>
+  </div>
+
+  <!-- Overlay « Automatiquement » -->
+  <div class="abs center" id="auto" style="top:1640px"><span class="h hl" style="font-size:96px;box-shadow:0 30px 70px rgba(20,0,60,.35)">Automatiquement ⚡</span></div>
+
+  <!-- I : Et c'est tout -->
+  <div id="I" class="layer">
+    <div class="abs center big vio" style="top:820px;font-size:160px"><span class="word" id="I1">Et c'est</span> <span class="word" id="I2"><span class="hlv">tout.</span></span></div>
+  </div>
+
+  <!-- J : chiffres -->
+  <div id="J1" class="layer">
+    <div class="abs center vio" id="J1n" style="top:700px;font-weight:800;font-size:330px;letter-spacing:-12px">+70</div>
+    <div class="abs center h vio" id="J1t" style="top:1080px"><span class="hlv">services</span></div>
+  </div>
+  <div id="J2" class="layer">
+    <div class="abs center m" id="J2a" style="top:640px">Livraison</div>
+    <div class="abs center" id="J2n" style="top:760px;font-weight:800;font-size:300px;letter-spacing:-12px">24h/24</div>
+    <div class="abs center s" id="J2b" style="top:1120px;opacity:.85">⚡ en quelques minutes</div>
+  </div>
+  <div id="J3" class="layer">
+    <div class="abs center m vio" id="J3a" style="top:640px">Paiement</div>
+    <div class="abs center vio" id="J3n" style="top:760px;font-weight:800;font-size:330px;letter-spacing:-12px">100%</div>
+    <div class="abs center h" id="J3t" style="top:1140px"><span class="hlv">sécurisé 🔒</span></div>
+  </div>
+
+  <!-- K : fin -->
+  <div id="K" class="layer">
+    <div id="Ktiles"></div>
+    <img class="abs" id="Klogo" src="assets/logo-mark-t.png" style="left:270px;top:430px;width:540px">
+    <img class="abs" id="Kword" src="assets/logo-word-t.png" style="left:79px;top:880px;width:922px">
+    <div class="abs center s" id="Ksub" style="top:1090px">Tes abonnements premium, livrés en quelques minutes</div>
+    <div class="abs center" id="Kcta" style="top:1230px"><span class="cta">🚀 Lance le bot</span></div>
+    <div class="abs center" id="Khandle" style="top:1440px"><span class="handle">✈️ @DigitalPassBf_bot</span></div>
+    <div class="abs center s" id="Kpay" style="top:1580px;font-size:36px;opacity:.85">Orange Money · Moov Money · Wave</div>
+  </div>
+</div>
+
+<script>
+/* ===== Outils (rendu déterministe : render(t) dessine l'image à l'instant t) ===== */
+const $ = (id) => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const E = {
+  out: (t) => 1 - Math.pow(1 - t, 3),
+  outQuint: (t) => 1 - Math.pow(1 - t, 5),
+  in: (t) => t * t * t,
+  inOut: (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  back: (t) => { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+};
+const p = (t, a, b, ease = E.out) => ease(clamp((t - a) / (b - a)));
+function set(el, { x = 0, y = 0, s = 1, r = 0, o = 1, blur = 0 } = {}) {
+  if (typeof el === "string") el = $(el);
+  el.style.transform = `translate(${x}px, ${y}px) scale(${s}) rotate(${r}deg)`;
+  el.style.opacity = o;
+  el.style.filter = blur > 0.05 ? `blur(${blur}px)` : "none";
+}
+/** Visibilité d'un élément : entrée [a, a+fi], sortie [b-fo, b]. */
+const vis = (t, a, b, fi = .3, fo = .25) => (t < a || t > b ? 0 : Math.min(p(t, a, a + fi), 1 - p(t, b - fo, b, E.in)));
+/** Mot qui apparaît façon référence : léger flou + montée, puis disparaît. */
+function pop(id, t, a, b = 1e9, { dy = 50, sc = .92 } = {}) {
+  const k = p(t, a, a + .32, E.outQuint), q = p(t, b - .18, b, E.in);
+  set(id, { y: (1 - k) * dy - q * 30, s: sc + (1 - sc) * k, o: k * (1 - q), blur: (1 - k) * 14 + q * 10 });
+}
+
+/* Décalage : la voix off commence 0,5 s après le début de la vidéo. */
+const OFF = 0.5;
+const V = "#5300D6", W = "#FFFFFF";
+
+/* ===== Fonds : couleur par segment, transition en cercle qui s'agrandit ===== */
+const BG = [[-9, V], [4.72, W], [5.78, V], [31.55, W], [32.38, V], [36.78, W], [38.6, V], [40.62, W], [42.6, V]];
+function background(t) {
+  let i = 0;
+  while (i < BG.length - 1 && t >= BG[i + 1][0]) i++;
+  const [start, col] = BG[i], prev = i > 0 ? BG[i - 1][1] : col;
+  const k = p(t, start, start + .42, E.inOut);
+  $("bgBase").style.background = k >= 1 ? col : prev;
+  $("bgWipe").style.background = col;
+  $("bgWipe").style.clipPath = `circle(${k * 1250}px at 540px 960px)`;
+}
+
+/* ===== A : marques ===== */
+const brands = [
+  [0.1, 0.96, "Netflix", "podium.jpg", "135%", "50% 40%"],
+  [0.96, 1.82, "ChatGPT", "chatgpt.jpg", "290%", "50% 12%"],
+  [1.82, 2.38, "Canva", "canva.jpg", "125%", "center"],
+  [2.38, 3.4, "Spotify", "spotify.jpg", "125%", "center"],
+];
+
+/* ===== Écrans du téléphone ===== */
+const HR = '<span class="hr">━━━━━━━━━━━━━━━━</span>';
+const kb = (rows) => `<div class="kb">${rows.map((r) => `<div class="row">${r.map(([txt, id]) => `<div class="btn"${id ? ` id="${id}"` : ""}>${txt}</div>`).join("")}</div>`).join("")}</div>`;
+const bot = (html, rows = [], time = "9:41") => `<div class="msg"><div class="bubble">${html}<span class="time">${time}</span></div>${rows.length ? kb(rows) : ""}</div>`;
+const user = (txt, time = "9:41") => `<div class="user">${txt}<span class="time">${time} ✓✓</span></div>`;
+const head = (name, sub) => `<div class="tg-head"><span class="back">‹</span><div class="av"></div><div><div class="name">${name}</div><div class="sub">${sub}</div></div></div>`;
+const botChat = (inner, input = true) => head("Digital Pass BF", "bot") + `<div class="chat${input ? "" : " full"}">${inner}</div>` + (input ? `<div class="tg-input"><span>📎</span><span class="field">Message</span><span>🎤</span></div>` : "");
+
+const shots = {
+  search: `<div class="search-top"><span style="font-size:46px;color:#3390EC">‹</span><div class="search-field">🔍 <span id="typed"></span><span class="caret" id="caret"></span></div></div>
+    <div class="res-label" id="resLbl">Résultats de la recherche</div>
+    <div class="res" id="resRow" style="top:250px"><div class="av"></div><div><div class="n">Digital Pass BF</div><div class="u">@DigitalPassBf_bot</div></div></div>`,
+  intro: head("Digital Pass BF", "bot") + `<div class="chat full" style="bottom:120px"></div>
+    <div class="intro-card"><div class="t">Que peut faire ce bot ?</div>✨ Vos abonnements premium, livrés en quelques minutes !
+
+🤖 IA : ChatGPT, Gemini, Lovable…
+🎨 Design & vidéo : CapCut, Adobe, Canva…
+📺 Streaming, 💼 productivité, 🔒 VPN…
+
+📱 Paiement Orange Money · Moov Money · Wave
+⚡ Livraison automatique 24 h/24</div>
+    <div class="start-bar"><span id="startBtn">DÉMARRER</span></div>`,
+  join: botChat(user("/start") + bot(`👋 <b>Bienvenue !</b>
+
+Pour utiliser le bot, rejoignez d'abord <b>Digital Pass BF · Officiel</b> : nouveautés, promos et disponibilités y sont annoncées en premier.
+
+Une fois membre, touchez <b>« ✅ J'ai rejoint »</b>.`, [[["👉 Rejoindre le groupe", "joinBtn"]], [["✅ J'ai rejoint"]]])),
+  group: head("Digital Pass BF · Officiel", "2 418 membres") + `<div class="chat">${bot(`🆕 <b>Nouveau service disponible</b>
+
+🤖 IA
+<b>ChatGPT Plus — 1 mois</b>
+💵 <b>4 950 F</b>
+⚡ Livraison automatique`, [[["🛒 Commander"]]], "9:12")}${bot(`🆕 <b>Nouveau service disponible</b>
+
+🎨 Design & Vidéo
+<b>CapCut Pro — 1 mois (formule Équipe)</b>
+💵 <b>2 250 F</b>
+⚡ Livraison automatique`, [[["🛒 Commander"]]], "9:40")}</div><div class="tg-input"><span class="field" style="text-align:center;color:#3390EC;font-weight:700">🔕 COUPER LE SON</span></div>`,
+  home: botChat(bot(`✨ <b>DIGITAL PASS BF</b> ✨
+<i>Vos abonnements premium, livrés en quelques minutes</i>
+${HR}👋 Salut <b>Awa</b> !
+
+⚡ Livraison <b>automatique</b> 24 h/24
+📱 Paiement <b>Orange Money · Moov Money · Wave</b>
+🔐 Vos accès gardés dans <b>Mes commandes</b>
+🎁 Parrainez vos amis et gagnez du solde
+${HR}💰 Votre solde : <b>0 F</b>`, [[["🛍️ Voir la boutique", "tapHome"]], [["📦 Mes commandes"], ["💰 Mon solde"]], [["🎁 Parrainage"], ["❓ Aide"]]])),
+  cats: botChat(bot(`🛍️ <b>BOUTIQUE</b>
+${HR}<b>72</b> services disponibles.
+Choisissez une catégorie 👇`, [[["🤖 IA  ·  38 offres"]], [["🎨 Design & Vidéo  ·  12 offres", "tapCat"]], [["💼 Productivité  ·  9 offres"]], [["🔒 VPN & Sécurité  ·  4 offres"]], [["🎬 Streaming  ·  2 offres"]], [["🏠 Accueil"]]])),
+  list: botChat(bot(`<b>🎨 DESIGN & VIDÉO</b>
+${HR}Touchez une offre pour voir le détail.`, [[["CapCut Pro — 1 mois · 2 250 F", "tapProd"]], [["Adobe Creative Cloud Pro · 10 800 F"]], [["Figma Pro Éducation — 2 ans · 2 250 F"]], [["CapCut Pro Individuel — 7 mois · 14 400 F"]], [["⬅️ Catégories"], ["🏠 Accueil"]]])),
+  product: botChat(bot(`🎨 <b>CapCut Pro — 1 mois (formule Équipe)</b>
+${HR}CapCut Pro formule Équipe pendant 1 mois, privé.
+• Montage vidéo avancé et effets Pro
+• 650 à 1 200 crédits IA
+Garantie sur toute la durée.
+${HR}💵 Prix : <b>2 250 F</b>
+✅ Disponible
+⚡ Livraison automatique, en quelques minutes`, [[["🛒 Acheter · 2 250 F", "tapBuy"]], [["⬅️ Retour"], ["🏠 Accueil"]]])),
+  paymethod: botChat(bot(`💳 <b>PAIEMENT</b>
+${HR}🧾 Commande CMD-7F3A21C4
+💵 Montant : <b>2 250 F</b>
+${HR}Choisissez votre moyen de paiement 👇
+
+⏱️ Ce paiement expire dans <b>15 minutes</b>.`, [[["🟠 Orange Money", "opOrange"]], [["🔵 Moov Money", "opMoov"]], [["🌊 Wave", "opWave"]], [["❌ Annuler"]]])),
+  number: botChat(bot(`🟠 <b>Orange Money</b>
+
+Envoyez le <b>numéro Orange Money qui va payer</b> (8 chiffres).`) + `<div id="numMsg" style="align-self:flex-end">${user("70 12 34 56")}</div>`),
+  instructions: botChat(user("70 12 34 56") + bot(`🟠 <b>PAIEMENT ORANGE MONEY</b>
+${HR}📞 Votre numéro : <b>70123456</b>
+💵 Montant : <b>2 250 F</b>
+${HR}1️⃣ Touchez <b>📋 Copier le code</b>
+2️⃣ Collez-le dans l'appli <b>Téléphone</b> et appelez
+<code>*144*2*1*6•••••••*2250#</code>
+3️⃣ Confirmez avec votre code secret`, [[["📋 Copier le code à composer", "tapCopy"]], [["🔄 J'ai payé — vérifier"]]])),
+  dialer: `<div class="dial-num" id="dialNum">*144*2*1*6•••••••*2250#</div>
+    <div class="pad">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((k) => `<div class="key">${k}</div>`).join("")}</div>
+    <div class="call" id="callBtn">📞</div>`,
+  ussd: `<div class="dial-num">*144*2*1*6•••••••*2250#</div><div class="dim"></div>
+    <div class="ussd"><b>Orange Money</b><br>Paiement de <b>2 250 F</b> à <b>FLASHPAY</b>.<br>Entrez votre code secret :
+    <div class="pin" id="pin"></div><div class="acts"><span>ANNULER</span><span id="sendBtn">ENVOYER</span></div></div>`,
+  paid: botChat(bot(`✅ <b>Paiement reçu pour CMD-7F3A21C4</b>
+Livraison en cours…`, [], "9:43")),
+  delivered: botChat(bot(`✅ <b>Paiement reçu pour CMD-7F3A21C4</b>
+Livraison en cours…`, [], "9:43") + `<div id="delivMsg">${bot(`✅ <b>Commande CMD-7F3A21C4 livrée</b>
+CapCut Pro — 1 mois (formule Équipe)
+
+<code>awa.capcut@•••••.com</code>
+<code>Mot de passe : ••••••••</code>
+
+🔐 Conservez ces accès en lieu sûr.`, [], "9:43")}</div>`),
+};
+Object.entries(shots).forEach(([k, html]) => { const d = document.createElement("div"); d.className = "shot"; d.id = "shot-" + k; d.innerHTML = html; $("shots").appendChild(d); });
+
+/* [écran, début, fin] en temps de voix off */
+const timeline = [
+  ["search", 7.75, 11.7], ["intro", 11.7, 13.2], ["join", 13.2, 15.45], ["group", 15.45, 17.42],
+  ["home", 17.42, 18.95], ["cats", 18.95, 20.2], ["list", 20.2, 21.15], ["product", 21.15, 23.4],
+  ["paymethod", 23.4, 26.6], ["number", 26.6, 27.62], ["instructions", 27.62, 29.0],
+  ["dialer", 29.0, 30.05], ["ussd", 30.05, 31.7], ["paid", 32.3, 33.95], ["delivered", 33.95, 37],
+];
+/* [bouton, instant du tap] */
+const taps = [["resRow", 11.5], ["startBtn", 12.36], ["joinBtn", 14.6], ["tapHome", 18.75], ["tapCat", 20.0], ["tapProd", 20.95],
+  ["tapBuy", 23.2], ["opOrange", 26.38], ["tapCopy", 28.12], ["callBtn", 29.6], ["sendBtn", 31.2]];
+
+/* Légendes : [début, fin, badge, texte] */
+const caps = [
+  [7.72, 11.62, "Étape 1", 'Ouvre Telegram et cherche<br><span class="hl">@DigitalPassBf_bot</span>'],
+  [11.62, 13.1, "Étape 1", 'Appuie sur <span class="hl">Démarrer</span>'],
+  [13.18, 17.36, "Étape 2", 'Rejoins le <span class="hl">groupe officiel</span>'],
+  [17.44, 21.56, "Étape 3", 'Choisis ton <span class="hl">service</span>'],
+  [21.66, 26.56, "Étape 4", 'Paie en <span class="hl">Mobile Money</span>'],
+  [26.56, 29.0, "Étape 4", 'Entre ton numéro,<br><span class="hl">copie le code</span>'],
+  [29.0, 31.6, "Étape 4", 'Compose et valide avec<br>ton <span class="hl">code secret</span>'],
+  [32.42, 37.0, "✅ Livré", 'Tes accès arrivent<br><span class="hl">dans le chat</span>'],
+];
+caps.forEach(([, , badge, html], i) => {
+  const d = document.createElement("div"); d.className = "cap"; d.id = "cap" + i;
+  d.innerHTML = `<span class="badge">${badge}</span><div class="m">${html}</div>`;
+  $("caps").appendChild(d);
+});
+
+/* Tuiles flottantes de la fin */
+const kTiles = [["chatgpt.jpg", 70, 150, "290%", "50% 12%"], ["canva.jpg", 830, 170, "125%", "center"], ["spotify.jpg", 60, 1700, "125%", "center"],
+  ["capcut.jpg", 850, 1690, "150%", "center"], ["podium.jpg", 460, 110, "135%", "50% 40%"], ["gemini.jpg", 470, 1740, "150%", "center"]];
+kTiles.forEach(([img, left, top, size, pos], i) => {
+  const d = document.createElement("div"); d.className = "tile abs"; d.id = "kt" + i;
+  Object.assign(d.style, { left: left + "px", top: top + "px", width: "160px", height: "160px", background: img === "capcut.jpg" ? "#000" : "#fff" });
+  d.innerHTML = `<div class="img" style="background-image:url(assets/${img});background-size:${size};background-position:${pos}"></div>`;
+  $("Ktiles").appendChild(d);
+});
+
+function centerOf(id) {
+  const el = $(id), sr = $("screen").getBoundingClientRect(), r = el.getBoundingClientRect();
+  const sc = sr.width / 710;
+  return { x: (r.left + r.width / 2 - sr.left) / sc, y: (r.top + r.height / 2 - sr.top) / sc };
+}
+
+/* ===== Rendu d'une image ===== */
+window.render = function (T) {
+  const t = T - OFF;
+  background(t);
+
+  /* Anneaux : intro (0 → 3.4), logo (5.8 → 7.7), fin (42.6 →) */
+  const ringV = Math.max(vis(t, -1, 3.45, .5, .3), vis(t, 5.8, 7.75, .4, .3), vis(t, 42.6, 99, .5, .1));
+  set("rings", { o: ringV, s: .85 + .15 * ringV });
+  $("rings").style.top = (t > 40 ? 640 : t > 5 ? 900 : 670) + "px";
+  [["d1", 320, .9, 0], ["d2", 490, -.55, 2], ["d3", 670, .35, 4]].forEach(([id, R, w, ph]) => {
+    const a = t * w + ph;
+    $(id).style.left = R + Math.cos(a) * R + "px"; $(id).style.top = R + Math.sin(a) * R + "px";
+  });
+  set("ringGlow", { s: 1 + Math.sin(t * 2.2) * .05, o: t > 40 ? .55 : t > 5 ? .5 : .85 });
+
+  /* A : un mot par marque */
+  const vA = vis(t, -1, 3.45, .01, .2);
+  $("A").style.opacity = vA;
+  if (vA > 0) {
+    const b = brands.find(([a, e]) => t >= a - .05 && t < e) || brands[t < 0 ? 0 : 3];
+    const [a, e, name, img, size, pos] = b;
+    $("Aw").textContent = name;
+    $("AiImg").style.cssText = `background-image:url(assets/${img});background-size:${size};background-position:${pos}`;
+    $("Ai").style.background = "#fff";
+    const k = p(t, a - .05, a + .25, E.back);
+    set("Ai", { s: .4 + .6 * k, o: clamp(k * 1.5), r: (1 - k) * -10 + Math.sin(t * 2) * 2 });
+    set("Aw", { y: (1 - p(t, a - .05, a + .25, E.outQuint)) * 40, o: p(t, a - .05, a + .2), blur: (1 - p(t, a - .05, a + .25)) * 12 });
+  }
+
+  /* B : sans carte bancaire ? / C'est possible. */
+  const vB = vis(t, 3.35, 5.85, .01, .2);
+  $("B").style.opacity = vB;
+  if (vB > 0) {
+    const kc = p(t, 3.4, 3.8, E.back), q = p(t, 4.55, 4.75, E.in);
+    set("Bcard", { s: kc * (1 - q), r: -8 + Math.sin(t * 2) * 3, o: clamp(kc * 1.5) * (1 - q) });
+    const kx = p(t, 4.0, 4.3, E.outQuint);
+    $("Bx").style.width = 330 * kx + "px"; $("Bx").style.marginLeft = -165 * kx + "px";
+    pop("B1", t, 3.45, 4.75); pop("B2", t, 3.9, 4.75);
+    pop("B3", t, 4.8, 5.85, { dy: 60 }); pop("B4", t, 5.0, 5.85, { dy: 60, sc: .7 });
+  }
+
+  /* C : Voici Digital Pass */
+  const vC = vis(t, 5.8, 7.75, .01, .3);
+  $("C").style.opacity = vC;
+  if (vC > 0) {
+    pop("Cv", t, 5.85);
+    const kl = p(t, 6.1, 6.75, E.back);
+    set("Clogo", { s: .3 + .7 * kl, r: (1 - kl) * -25 + Math.sin(t * 1.6) * 2, o: clamp(kl * 1.6), y: Math.sin(t * 1.4) * 10 - p(t, 7.45, 7.75, E.in) * 40 });
+    const kw = p(t, 6.4, 6.9, E.outQuint);
+    set("Cword", { y: (1 - kw) * 60, o: kw, blur: (1 - kw) * 14 });
+  }
+
+  /* Légendes */
+  caps.forEach(([a, b], i) => {
+    const k = p(t, a, a + .35, E.outQuint), q = p(t, b - .18, b, E.in);
+    set("cap" + i, { y: (1 - k) * -40 + q * -20, o: t < a || t > b ? 0 : k * (1 - q), blur: (1 - k) * 10 });
+  });
+
+  /* Téléphone : entre à 7.7, sort à 31.55 (« Et c'est tout »), revient à 32.3, sort à 36.75 */
+  const inA = p(t, 7.55, 8.3, E.outQuint), outA = p(t, 31.4, 31.7, E.in);
+  const inB = p(t, 32.25, 32.85, E.outQuint), outB = p(t, 36.55, 36.85, E.in);
+  let py = 1700, po = 0, pr = 0;
+  if (t < 32) { py = (1 - inA) * 1500 + outA * 1500; po = inA > 0 && outA < 1 ? 1 : 0; pr = (1 - inA) * 8; }
+  else { py = (1 - inB) * 1500 + outB * 200; po = inB > 0 ? 1 - outB : 0; pr = (1 - inB) * -8; }
+  set("phone", { y: py, o: po, r: pr });
+
+  if (po > 0) {
+    timeline.forEach(([k, a, b]) => {
+      const kin = p(t, a, a + .25, E.outQuint);
+      const on = t >= a && t < b;
+      set("shot-" + k, { o: on ? 1 : 0, y: on ? (1 - kin) * 30 : 0 });
+      $("shot-" + k).style.zIndex = on ? 2 : 1;
+    });
+    // Saisie de la recherche
+    const full = "DigitalPassBf_bot", n = Math.round(clamp((t - 9.7) / 1.5) * full.length);
+    $("typed").innerHTML = n ? full.slice(0, n) : '<span class="ph">Rechercher</span>';
+    $("caret").style.opacity = Math.sin(t * 10) > 0 ? 1 : 0;
+    const kr = p(t, 10.55, 10.85);
+    set("resRow", { o: kr, y: (1 - kr) * 20 }); set("resLbl", { o: kr });
+    // Numéro envoyé
+    const kn = p(t, 27.0, 27.25, E.back); set("numMsg", { o: clamp(kn * 1.5), s: .8 + .2 * kn });
+    document.querySelectorAll(".kb .btn").forEach((b) => { b.style.background = ""; });
+    // Opérateurs mis en avant pendant qu'ils sont cités
+    [["opOrange", 24.3, 25.1, "#FF7900"], ["opMoov", 25.16, 25.9, "#1E7FD6"], ["opWave", 25.94, 26.6, "#1DC4FF"]].forEach(([id, a, b, c]) => {
+      const on = t >= a && t < b;
+      $(id).style.background = on ? c : "";
+      $(id).style.transform = on ? `scale(${1 + .05 * Math.sin((t - a) * 9) ** 2})` : "";
+    });
+    // Composeur : collage du code, puis code secret
+    $("dialNum").style.opacity = p(t, 29.12, 29.3);
+    const dots = Math.min(4, Math.max(0, Math.floor((t - 30.35) / .17) + 1));
+    $("pin").textContent = "•".repeat(dots);
+    // Livraison
+    const kd = p(t, 34.0, 34.35, E.back); set("delivMsg", { o: clamp(kd * 1.5), s: .85 + .15 * kd });
+
+    let shown = false;
+    taps.forEach(([id, at]) => {
+      if (t > at - .35 && t < at + .3) {
+        const c = centerOf(id), d = (t - at) / .3;
+        const press = t < at ? p(t, at - .35, at) : 1 - clamp(d);
+        $("tap").style.left = c.x + "px"; $("tap").style.top = c.y + "px";
+        set("tap", { s: t < at ? 1.3 - .3 * press : 1 + clamp(d) * .6, o: press });
+        shown = true;
+      }
+      if ($(id).classList.contains("btn") && t >= at && t < at + .8) $(id).style.background = "rgba(30,60,30,.62)";
+    });
+    if (!shown) set("tap", { o: 0 });
+    const tk = p(t, 28.2, 28.45, E.back), tq = p(t, 28.85, 29.0, E.in);
+    $("toast").style.opacity = t > 28.2 && t < 29 ? clamp(tk) * (1 - tq) : 0;
+  }
+
+  /* Automatiquement ⚡ */
+  const ka = p(t, 35.8, 36.15, E.back), qa = p(t, 36.55, 36.8, E.in);
+  set("auto", { s: (.5 + .5 * ka) * (1 - qa * .3), o: t < 35.8 ? 0 : clamp(ka * 1.5) * (1 - qa), r: (1 - ka) * -6 });
+
+  /* I : Et c'est tout. */
+  const vI = vis(t, 31.6, 32.42, .01, .15);
+  $("I").style.opacity = vI;
+  if (vI > 0) { pop("I1", t, 31.68); pop("I2", t, 31.95, 99, { sc: .6 }); }
+
+  /* J : chiffres */
+  const vJ1 = vis(t, 36.8, 38.62, .01, .15), vJ2 = vis(t, 38.6, 40.64, .01, .15), vJ3 = vis(t, 40.62, 42.62, .01, .15);
+  $("J1").style.opacity = vJ1; $("J2").style.opacity = vJ2; $("J3").style.opacity = vJ3;
+  if (vJ1 > 0) {
+    $("J1n").textContent = "+" + Math.round(70 * p(t, 36.9, 37.85, E.out));
+    pop("J1n", t, 36.88); pop("J1t", t, 37.9, 99, { sc: .7 });
+  }
+  if (vJ2 > 0) { pop("J2a", t, 38.65); pop("J2n", t, 39.3, 99, { sc: .7 }); pop("J2b", t, 39.9); }
+  if (vJ3 > 0) {
+    $("J3n").textContent = Math.round(100 * p(t, 41.2, 41.9, E.out)) + "%";
+    pop("J3a", t, 40.7); pop("J3n", t, 41.15); pop("J3t", t, 41.8, 99, { sc: .7 });
+  }
+
+  /* K : fin */
+  const vK = vis(t, 42.6, 99, .01, .1);
+  $("K").style.opacity = vK;
+  if (vK > 0) {
+    const kl = p(t, 42.65, 43.3, E.back);
+    set("Klogo", { s: .3 + .7 * kl, r: (1 - kl) * -25 + Math.sin(t * 1.6) * 2, o: clamp(kl * 1.6), y: Math.sin(t * 1.4) * 10 });
+    pop("Kword", t, 42.9); pop("Ksub", t, 43.3);
+    const kc = p(t, 43.8, 44.3, E.back);
+    set("Kcta", { s: (.6 + .4 * kc) * (1 + (t > 44.6 ? Math.abs(Math.sin((t - 44.6) * 3.2)) * .04 : 0)), o: clamp(kc * 1.5) });
+    pop("Khandle", t, 44.3); pop("Kpay", t, 44.6);
+    kTiles.forEach((_, i) => {
+      const k = p(t, 42.8 + i * .08, 43.4 + i * .08, E.back);
+      set("kt" + i, { s: k, o: clamp(k * 1.5), y: Math.sin(t * 1.2 + i * 1.3) * 14, r: Math.sin(t * .9 + i) * 6 });
+    });
+  }
+};
+window.DURATION = 47.5;
+window.render(0);
+</script>
+</body>
+</html>

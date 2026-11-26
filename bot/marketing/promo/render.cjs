@@ -1,4 +1,4 @@
-// Export de la vidéo : node render.js [--stills t1,t2,...] [--out fichier.mp4]
+// Export de la vidéo : node render.cjs [--page promo-v2.html] [--stills t1,t2,...] [--out fichier.mp4]
 // Chaque image est rendue de façon déterministe (window.render(t)), puis encodée par ffmpeg.
 const { chromium } = require("playwright");
 const { spawn } = require("child_process");
@@ -10,7 +10,8 @@ const FPS = 30;
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
-  await page.goto("file://" + path.join(__dirname, "index.html"));
+  const pageFile = opt("--page") || "index.html";
+  await page.goto("file://" + path.join(__dirname, pageFile));
   await page.evaluate(async () => { await document.fonts.ready; await Promise.all([...document.images].map((i) => i.decode().catch(() => {}))); });
   await page.waitForTimeout(500);
   const stills = opt("--stills");
