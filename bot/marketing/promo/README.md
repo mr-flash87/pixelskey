@@ -16,6 +16,10 @@ puis livraison automatique dans le chat.
 ```bash
 node render.cjs --page promo-v2.html --out /tmp/v2-muette.mp4   # images (Playwright + ffmpeg)
 ./build-audio-v2.sh /tmp/v2-muette.mp4                           # → digital-pass-promo-v2.mp4
+
+# Version horizontale 1920×1080 (même animation, téléphone à droite, légendes à gauche)
+node render.cjs --page "promo-v2.html?h=1" --w 1920 --h 1080 --out /tmp/v2h-muette.mp4
+./build-audio-v2.sh /tmp/v2h-muette.mp4 digital-pass-promo-v2-horizontal.mp4
 ```
 
 - Aperçu : ouvrir la page dans un navigateur, puis `render(12.5)` dans la console.

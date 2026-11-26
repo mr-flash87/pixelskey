@@ -224,6 +224,9 @@ function pop(id, t, a, b = 1e9, { dy = 50, sc = .92 } = {}) {
 
 /* Décalage : la voix off commence 0,5 s après le début de la vidéo. */
 const OFF = 0.5;
+/* Format : vertical 1080×1920 par défaut, horizontal 1920×1080 avec ?h=1 */
+const LAND = new URLSearchParams(location.search).get("h") === "1";
+const CX = LAND ? 960 : 540, CY = LAND ? 540 : 960;
 const V = "#5300D6", W = "#FFFFFF";
 
 /* ===== Fonds : couleur par segment, transition en cercle qui s'agrandit ===== */
@@ -235,7 +238,7 @@ function background(t) {
   const k = p(t, start, start + .42, E.inOut);
   $("bgBase").style.background = k >= 1 ? col : prev;
   $("bgWipe").style.background = col;
-  $("bgWipe").style.clipPath = `circle(${k * 1250}px at 540px 960px)`;
+  $("bgWipe").style.clipPath = `circle(${k * 1250}px at ${CX}px ${CY}px)`;
 }
 
 /* ===== A : marques ===== */
@@ -374,7 +377,9 @@ const kTiles = [["chatgpt.jpg", 70, 150, "290%", "50% 12%"], ["canva.jpg", 830, 
   ["capcut.jpg", 850, 1690, "150%", "center"], ["podium.jpg", 460, 110, "135%", "50% 40%"], ["gemini.jpg", 470, 1740, "150%", "center"]];
 kTiles.forEach(([img, left, top, size, pos], i) => {
   const d = document.createElement("div"); d.className = "tile abs"; d.id = "kt" + i;
-  Object.assign(d.style, { left: left + "px", top: top + "px", width: "160px", height: "160px", background: img === "capcut.jpg" ? "#000" : "#fff" });
+  if (LAND) [left, top] = [[-600, 330], [-680, 860], [-560, 1390], [1440, 310], [1530, 850], [1410, 1400]][i];
+  const sz = LAND ? 210 : 160;
+  Object.assign(d.style, { left: left + "px", top: top + "px", width: sz + "px", height: sz + "px", background: img === "capcut.jpg" ? "#000" : "#fff" });
   d.innerHTML = `<div class="img" style="background-image:url(assets/${img});background-size:${size};background-position:${pos}"></div>`;
   $("Ktiles").appendChild(d);
 });
@@ -534,6 +539,25 @@ window.render = function (T) {
     });
   }
 };
+/* Mise en page horizontale : les scènes de texte dans une colonne centrale agrandie,
+   le téléphone à droite et les légendes à gauche. */
+if (LAND) {
+  document.documentElement.style.cssText = "width:1920px;height:1080px";
+  document.body.style.cssText = "width:1920px;height:1080px";
+  Object.assign($("stage").style, { width: "1920px", height: "1080px" });
+  const col = document.createElement("div");
+  Object.assign(col.style, { position: "absolute", left: "555px", top: "-180px", width: "1080px", height: "1920px", transform: "scale(.75)", transformOrigin: "0 0" });
+  $("stage").appendChild(col);
+  ["rings", "A", "B", "C", "I", "J1", "J2", "J3", "K"].forEach((id) => col.appendChild($(id)));
+  const pw = document.createElement("div");
+  Object.assign(pw.style, { position: "absolute", left: "1180px", top: "30px", width: "750px", height: "1470px", transform: "scale(.69)", transformOrigin: "0 0" });
+  $("stage").appendChild(pw); pw.appendChild($("phone"));
+  Object.assign($("phone").style, { left: "0px", top: "0px" });
+  Object.assign($("caps").style, { left: "60px", top: "330px", width: "1060px", height: "420px", right: "auto", bottom: "auto" });
+  document.querySelectorAll("#caps .m").forEach((m) => { m.style.fontSize = "78px"; });
+  Object.assign($("auto").style, { left: "60px", right: "auto", width: "1060px", top: "760px" });
+  $("stage").appendChild($("caps")); $("stage").appendChild($("auto"));
+}
 window.DURATION = 47.5;
 window.render(0);
 </script>
