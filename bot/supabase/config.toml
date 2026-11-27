@@ -9,3 +9,6 @@ verify_jwt = false
 verify_jwt = false
 [functions.bot-cron]
 verify_jwt = false
+
+[functions.group-post]
+verify_jwt = false
